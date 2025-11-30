@@ -89,6 +89,13 @@ StyledPopup {
                     value: `${Math.round(ResourceUsage.cpuUsage * 100)}%`
                 }
             }
+            StyledPopupValueRow {
+                    icon: "device_thermostat"
+                    label: Translation.tr("Temp:")
+                    // Assumo che cpuTemperature sia un numero (es. 65). 
+                    // Uso Math.round per evitare decimali (es. 65.4 -> 65)
+                    value: `${Math.round(ResourceUsage.cpuTemperature || 0)}°C`
+            }
         }
     }
 }
