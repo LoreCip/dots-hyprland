@@ -45,6 +45,28 @@ MouseArea {
             warningThreshold: Config.options.bar.resources.cpuWarningThreshold
         }
 
+        // --- CPU TEMP (Nuova Aggiunta) ---
+        Resource {
+            // Icona "device_thermostat" o "thermostat" (Material Symbols)
+            iconName: "device_thermostat" 
+            
+            // Assumiamo che ResourceUsage abbia una proprietà cpuTemperature.
+            // Dividiamo per 100 perché Resource si aspetta un valore 0.0-1.0
+            // Visualmente: 100°C = cerchio pieno.
+            percentage: (ResourceUsage.cpuTemperature || 0) / 100 
+
+            // Logica di visualizzazione: 
+            // Modifica 'alwaysShowCpuTemp' con la tua effettiva configurazione
+            shown: Config.options.bar.resources.alwaysShowCpuTemp || 
+                   root.alwaysShowAllResources || 
+                   (percentage * 100 > warningThreshold) // Mostra sempre se surriscalda
+
+            Layout.leftMargin: shown ? 6 : 0
+            
+            // Imposta la soglia
+            warningThreshold: Config.options.bar.resources.cpuTempWarningThreshold || 95
+        }
+
     }
 
     ResourcesPopup {

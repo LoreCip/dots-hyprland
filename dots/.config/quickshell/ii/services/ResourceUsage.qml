@@ -20,6 +20,9 @@ Singleton {
 	property real swapUsed: swapTotal - swapFree
     property real swapUsedPercentage: swapTotal > 0 ? (swapUsed / swapTotal) : 0
     property real cpuUsage: 0
+    // --- NUOVO: Proprietà per la temperatura ---
+    property real cpuTemperature: 0 
+    // -------------------------------------------
     property var previousCpuStats
 
     property string maxAvailableMemoryString: kbToGbString(ResourceUsage.memoryTotal)
@@ -67,6 +70,9 @@ Singleton {
             // Reload files
             fileMeminfo.reload()
             fileStat.reload()
+            // --- NUOVO: Ricarica il file della temperatura ---
+            fileTemp.reload()
+            // ------------------------------------------------
 
             // Parse memory and swap usage
             const textMeminfo = fileMeminfo.text()
@@ -92,10 +98,23 @@ Singleton {
                 previousCpuStats = { total, idle }
             }
 
+            // --- NUOVO: Calcolo Temperatura ---
+            // Il file contiene un numero in milligradi (es. 45000 = 45°C)
+            // Dividiamo per 1000 per ottenere i gradi.
+            const rawTemp = Number(fileTemp.text())
+            if (!isNaN(rawTemp)) {
+            cpuTemperature = rawTemp / 1000
+            }
+            // ----------------------------------
+
             root.updateHistories()
             interval = Config.options?.resources?.updateInterval ?? 3000
         }
 	}
+
+    // --- NUOVO: Lettura file termico ---
+    FileView { id: fileTemp; path: "/sys/class/thermal/thermal_zone10/temp" }
+    // -----------------------------------
 
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }

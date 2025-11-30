@@ -26,8 +26,8 @@ RippleButton {
     toggled: GlobalStates.sidebarLeftOpen
 
     onPressed: {
-        GlobalStates.sidebarLeftOpen = !GlobalStates.sidebarLeftOpen;
-    }
+        //  GlobalStates.sidebarLeftOpen = !GlobalStates.sidebarLeftOpen;
+   	}
 
     Connections {
         target: Ai
@@ -55,6 +55,7 @@ RippleButton {
     CustomIcon {
         id: distroIcon
         anchors.centerIn: parent
+        visible: false
         width: 19.5
         height: 19.5
         source: Config.options.bar.topLeftIcon == 'distro' ? SystemInfo.distroIcon : `${Config.options.bar.topLeftIcon}-symbolic`
