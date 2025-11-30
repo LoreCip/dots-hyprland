@@ -23,4 +23,8 @@ if status is-interactive # Commands to run in interactive sessions can go here
     alias clear "printf '\033[2J\033[3J\033[1;1H'"
     alias q 'qs -c ii'
     
+    # My aliases
+    alias ll 'ls -lha'
+    alias cc 'clear'
+
 end
