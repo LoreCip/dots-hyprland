@@ -10,6 +10,7 @@ MouseArea {
     readonly property var chargeState: Battery.chargeState
     readonly property bool isCharging: Battery.isCharging
     readonly property bool isPluggedIn: Battery.isPluggedIn
+    readonly property bool isChargeLimited: Battery.isChargeLimited
     readonly property real percentage: Battery.percentage
     readonly property bool isLow: percentage <= Config.options.battery.low / 100
 
@@ -47,6 +48,15 @@ MouseArea {
                     iconSize: Appearance.font.pixelSize.smaller
                     visible: isCharging && percentage < 1 // TODO: animation
                 }
+                MaterialSymbol {
+                    id: leafIcon
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: -2
+                    Layout.rightMargin: -2
+                    text: "eco"
+                    iconSize: Appearance.font.pixelSize.smaller
+                    visible: isChargeLimited && !isCharging
+            	}
                 StyledText {
                     Layout.alignment: Qt.AlignVCenter
                     font: batteryProgress.font

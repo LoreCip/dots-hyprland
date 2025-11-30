@@ -68,5 +68,12 @@ StyledPopup {
             label: Translation.tr("Health:")
             value: `${(Battery.health).toFixed(1)}%`
         }
+
+        StyledPopupValueRow {
+            visible: Battery.isPluggedIn
+            icon: "eco"
+            label: Translation.tr("Conservation mode:")
+            value: Battery.isChargeLimited ? Translation.tr("Active") : Translation.tr("Not active")
+        }
     }
 }

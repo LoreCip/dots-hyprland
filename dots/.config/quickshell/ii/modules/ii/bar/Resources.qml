@@ -39,31 +39,20 @@ MouseArea {
             iconName: "planner_review"
             percentage: ResourceUsage.cpuUsage
             shown: Config.options.bar.resources.alwaysShowCpu || 
-                !(MprisController.activePlayer?.trackTitle?.length > 0) ||
-                root.alwaysShowAllResources
+                   !(MprisController.activePlayer?.trackTitle?.length > 0) ||
+                   root.alwaysShowAllResources
             Layout.leftMargin: shown ? 6 : 0
             warningThreshold: Config.options.bar.resources.cpuWarningThreshold
         }
 
-        // --- CPU TEMP (Nuova Aggiunta) ---
         Resource {
-            // Icona "device_thermostat" o "thermostat" (Material Symbols)
             iconName: "device_thermostat" 
-            
-            // Assumiamo che ResourceUsage abbia una proprietà cpuTemperature.
-            // Dividiamo per 100 perché Resource si aspetta un valore 0.0-1.0
-            // Visualmente: 100°C = cerchio pieno.
+            // Divide by 100 since Resource expects a value in 0.0-1.0
             percentage: (ResourceUsage.cpuTemperature || 0) / 100 
-
-            // Logica di visualizzazione: 
-            // Modifica 'alwaysShowCpuTemp' con la tua effettiva configurazione
             shown: Config.options.bar.resources.alwaysShowCpuTemp || 
                    root.alwaysShowAllResources || 
-                   (percentage * 100 > warningThreshold) // Mostra sempre se surriscalda
-
+                   (percentage * 100 > warningThreshold)
             Layout.leftMargin: shown ? 6 : 0
-            
-            // Imposta la soglia
             warningThreshold: Config.options.bar.resources.cpuTempWarningThreshold || 95
         }
 
