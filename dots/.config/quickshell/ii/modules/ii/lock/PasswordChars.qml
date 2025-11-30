@@ -124,5 +124,22 @@ StyledFlickable {
                 }
             }
         }
+        
+        // Blinking caret after the last dot
+        Rectangle {
+            id: caret
+            width: 2
+            height: 16
+            anchors.verticalCenter: parent.verticalCenter
+            visible: true
+            opacity: 1.0
+
+            SequentialAnimation on opacity {
+                running: caret.visible
+                loops: Animation.Infinite
+                NumberAnimation { from: 1.0; to: 0.0; duration: 500 }
+                NumberAnimation { from: 0.0; to: 1.0; duration: 500 }
+            }
+        }
     }
 }
