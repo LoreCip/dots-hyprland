@@ -22,7 +22,7 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         text: root.label
         font {
-            weight: Font.DemiBold
+            weight: Font.Bold
             pixelSize: Appearance.font.pixelSize.normal
         }
         color: Appearance.colors.colOnSurfaceVariant
