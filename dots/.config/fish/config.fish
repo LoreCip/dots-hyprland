@@ -25,4 +25,8 @@ if status is-interactive # Commands to run in interactive sessions can go here
     alias pamcan pacman
     alias q 'qs -c ii'
     
+    # My aliases
+    alias ll 'ls -lha'
+    alias cc 'clear'
+
 end
