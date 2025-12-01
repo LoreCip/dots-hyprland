@@ -52,9 +52,7 @@ MouseArea {
                     onOpacityChanged: {
                         visible = opacity > 0
                     }
-
-
-	        }
+    	        }
                 MaterialSymbol {
                     id: leafIcon
                     Layout.alignment: Qt.AlignVCenter
@@ -65,10 +63,10 @@ MouseArea {
                     visible: isChargeLimited && !isCharging
             	}
                 StyledText {
-                id: batteryText	
-                Layout.alignment: Qt.AlignVCenter
-                font: batteryProgress.font
-                text: batteryProgress.text
+                    id: batteryText	
+                    Layout.alignment: Qt.AlignVCenter
+                    font: batteryProgress.font
+                    text: batteryProgress.text
                 }
             }
         }
