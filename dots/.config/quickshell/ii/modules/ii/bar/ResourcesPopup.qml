@@ -88,11 +88,16 @@ StyledPopup {
                     label: Translation.tr("Load:")
                     value: `${Math.round(ResourceUsage.cpuUsage * 100)}%`
                 }
-            }
-            StyledPopupValueRow {
-                    icon: "device_thermostat"
-                    label: Translation.tr("Temp:")
-                    value: `${Math.round(ResourceUsage.cpuTemperature || 0)}°C`
+                StyledPopupValueRow {
+                        icon: "device_thermostat"
+                        label: Translation.tr("Temp:")
+                        value: `${Math.round(ResourceUsage.cpuTemperature || 0)}°C`
+                }
+                StyledPopupValueRow {
+                        icon: "waves"
+                        label: Translation.tr("Freq:")
+                        value: `${Math.round(ResourceUsage.cpuAvgFrequency * 100 || 0) / 100} GHz`
+                }
             }
         }
     }
