@@ -42,8 +42,19 @@ MouseArea {
                     fill: 1
                     text: "bolt"
                     iconSize: Appearance.font.pixelSize.smaller
-                    visible: isCharging && percentage < 1 // TODO: animation
-                }
+                    visible: isCharging && percentage < 1 
+		            opacity: (isCharging && percentage < 1) ? 1 : 0
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 300; easing.type: Easing.InOutCubic }
+                    }
+
+                    onOpacityChanged: {
+                        visible = opacity > 0
+                    }
+
+
+	        }
                 MaterialSymbol {
                     id: leafIcon
                     Layout.alignment: Qt.AlignVCenter
@@ -54,9 +65,10 @@ MouseArea {
                     visible: isChargeLimited && !isCharging
             	}
                 StyledText {
-                    Layout.alignment: Qt.AlignVCenter
-                    font: batteryProgress.font
-                    text: batteryProgress.text
+                id: batteryText	
+                Layout.alignment: Qt.AlignVCenter
+                font: batteryProgress.font
+                text: batteryProgress.text
                 }
             }
         }
