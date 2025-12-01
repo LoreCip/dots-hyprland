@@ -21,6 +21,7 @@ Singleton {
     property real swapUsedPercentage: swapTotal > 0 ? (swapUsed / swapTotal) : 0
     property real cpuUsage: 0
     property real cpuTemperature: 0 
+    property real cpuAvgFrequency: 0
 
     property var previousCpuStats
 
@@ -70,6 +71,7 @@ Singleton {
             fileMeminfo.reload()
             fileStat.reload()
             fileTemp.reload()
+            fileFreq.reload()
 
             // Parse memory and swap usage
             const textMeminfo = fileMeminfo.text()
@@ -98,14 +100,21 @@ Singleton {
             // Compute CPU temperature
             const rawTemp = Number(fileTemp.text())
             if (!isNaN(rawTemp)) {
-            cpuTemperature = rawTemp / 1000
+                cpuTemperature = rawTemp / 1000 // C
+            }
+
+            // Compute CPU avg frequency
+            const rawAvgFreq = Number(fileFreq.text())
+            if (!isNaN(rawAvgFreq)) {
+                cpuAvgFrequency = rawAvgFreq / 1e6 // GHz
             }
 
             root.updateHistories()
-            interval = Config.options?.resources?.updateInterval ?? 3000
+            interval = Config.options?.resources?.updateInterval ?? 1000
         }
 	}
 
+    FileView { id: fileFreq; path: "/sys/bus/cpu/devices/cpu0/cpufreq/cpuinfo_avg_freq" }
     FileView { id: fileTemp; path: "/sys/class/thermal/thermal_zone10/temp" }
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }

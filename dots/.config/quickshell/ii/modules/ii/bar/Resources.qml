@@ -56,6 +56,15 @@ MouseArea {
             warningThreshold: Config.options.bar.resources.cpuTempWarningThreshold || 95
         }
 
+        Resource {
+            iconName: "waves" 
+            // Divide by 100 since Resource expects a value in 0.0-1.0
+            percentage: (ResourceUsage.cpuAvgFrequency || 0) / 100 
+            shown: root.alwaysShowAllResources
+            Layout.leftMargin: shown ? 6 : 0
+            warningThreshold: 100
+        }
+
     }
 
     ResourcesPopup {
