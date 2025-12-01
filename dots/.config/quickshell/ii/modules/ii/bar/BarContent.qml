@@ -16,6 +16,7 @@ Item { // Bar content region
     property var brightnessMonitor: Brightness.getMonitorForScreen(screen)
     property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen?.width) ? 2 : (Appearance.sizes.barShortenScreenWidthThreshold >= screen?.width) ? 1 : 0
     readonly property int centerSideModuleWidth: (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened : (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : Appearance.sizes.barCenterSideModuleWidth
+    property int centerWidgetIndex: 0
 
     component VerticalBarSeparator: Rectangle {
         Layout.topMargin: Appearance.sizes.baseBarHeight / 3
@@ -84,21 +85,53 @@ Item { // Bar content region
 
             Item { 
                 Layout.alignment: Qt.AlignVCenter
-                Layout.leftMargin: Appearance.rounding.screenRounding
-                Layout.preferredWidth: Appearance.sizes.barHeight 
+                Layout.leftMargin: Appearance.rounding.screenRounding * 0.5
             }
-            //LeftSidebarButton { // Left sidebar button
+
+            // LeftSidebarButton { // Left sidebar button
             //    Layout.alignment: Qt.AlignVCenter
             //    Layout.leftMargin: Appearance.rounding.screenRounding
             //    colBackground: barLeftSideMouseArea.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
-            //}
+            // }
+            // ActiveWindow {
+            //     visible: root.useShortenedForm === 0
+            //     Layout.rightMargin: Appearance.rounding.screenRounding
+            //     Layout.fillWidth: true
+            //     Layout.fillHeight: true
+            // }
 
-            ActiveWindow {
-                Layout.leftMargin: 10 + (leftSidebarButton.visible ? 0 : Appearance.rounding.screenRounding)
-                Layout.rightMargin: Appearance.rounding.screenRounding
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                visible: root.useShortenedForm === 0
+            BarGroup{
+
+                implicitWidth: root.centerSideModuleWidth * 1.2
+
+                IconToolbarButton {
+                    id: toggleButton
+                    text: root.centerWidgetIndex === 1 ? "queue_music" : "web_asset"
+                    
+                    onClicked: {
+                        root.centerWidgetIndex = root.centerWidgetIndex === 0 ? 1 : 0
+                    }
+                }
+
+                StackLayout {
+                    id: sharedSpace
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    
+                    currentIndex: root.centerWidgetIndex
+
+                    ActiveWindow {
+                        visible: root.useShortenedForm === 0
+                        Layout.rightMargin: Appearance.rounding.screenRounding
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                    }
+
+                    Media {
+                        visible: root.useShortenedForm < 2
+                        Layout.fillWidth: true
+                    }
+                }
             }
         }
     }
@@ -122,10 +155,10 @@ Item { // Bar content region
                 Layout.fillWidth: root.useShortenedForm === 2
             }
 
-            Media {
-                visible: root.useShortenedForm < 2
-                Layout.fillWidth: true
-            }
+            // Media {
+            //     visible: root.useShortenedForm < 2
+            //     Layout.fillWidth: true
+            // }
         }
 
         VerticalBarSeparator {
