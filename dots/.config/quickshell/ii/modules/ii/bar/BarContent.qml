@@ -216,6 +216,8 @@ Item { // Bar content region
                     Layout.alignment: Qt.AlignVCenter
                 }
 
+                PrinterIndicator {}
+
                 BatteryIndicator {
                     visible: (root.useShortenedForm < 2 && Battery.available)
                     Layout.alignment: Qt.AlignVCenter
