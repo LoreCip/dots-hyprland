@@ -12,9 +12,6 @@ IconToolbarButton {
     
     text: "print"
     
-    ToolTip.visible: hovered
-    ToolTip.text: "Coda di stampa: " + jobCount + " file"
-
     Process {
         id: checkQueue
         command: ["bash", "-c", "lpstat -o | wc -l"]
