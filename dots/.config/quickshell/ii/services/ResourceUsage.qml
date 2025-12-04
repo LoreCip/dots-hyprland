@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Simple polled resource usage service with RAM, Swap, and CPU usage.
+ * Simple polled resource usage service with RAM, Swap, CPU usage and fan rpm.
  */
 Singleton {
     id: root
@@ -22,9 +22,12 @@ Singleton {
     property real cpuUsage: 0
     property real cpuTemperature: 0 
     property real cpuAvgFrequency: 0
-
+    property int fan1RPM: 0
+    property int fan2RPM: 0
+    
     property var previousCpuStats
 
+    property string cpuTempPath: ""
     property string maxAvailableMemoryString: kbToGbString(ResourceUsage.memoryTotal)
     property string maxAvailableSwapString: kbToGbString(ResourceUsage.swapTotal)
     property string maxAvailableCpuString: "--"
@@ -38,6 +41,25 @@ Singleton {
         return (kb / (1024 * 1024)).toFixed(1) + " GB";
     }
 
+    function updateCpuAvgFrequency() {
+        const text = fileFreq.text()
+        const regex = /cpu MHz\s*:\s*([\d.]+)/g
+        
+        let match
+        let totalFreq = 0
+        let count = 0
+
+        while ((match = regex.exec(text)) !== null) {
+            totalFreq += parseFloat(match[1])
+            count++
+        }
+
+        if (count > 0) {
+            root.cpuAvgFrequency = (totalFreq / count) / 1000
+        } else {
+            root.cpuAvgFrequency = 0
+        }
+    }
     function updateMemoryUsageHistory() {
         memoryUsageHistory = [...memoryUsageHistory, memoryUsedPercentage]
         if (memoryUsageHistory.length > historyLength) {
@@ -63,7 +85,7 @@ Singleton {
     }
 
 	Timer {
-		interval: 1
+		interval: 1000
         running: true 
         repeat: true
 		onTriggered: {
@@ -104,18 +126,34 @@ Singleton {
             }
 
             // Compute CPU avg frequency
-            const rawAvgFreq = Number(fileFreq.text())
-            if (!isNaN(rawAvgFreq)) {
-                cpuAvgFrequency = rawAvgFreq / 1e6 // GHz
-            }
+            root.updateCpuAvgFrequency()
+
+            // root.findFansRPM.start()
 
             root.updateHistories()
             interval = Config.options?.resources?.updateInterval ?? 1000
         }
 	}
 
-    FileView { id: fileFreq; path: "/sys/bus/cpu/devices/cpu0/cpufreq/cpuinfo_avg_freq" }
-    FileView { id: fileTemp; path: "/sys/class/thermal/thermal_zone10/temp" }
+    // Find file with correct temp measurement
+    Process {
+        id: findTempPathProc
+        command: ["bash", "-c", "grep -l 'x86_pkg_temp' /sys/class/thermal/thermal_zone*/type | head -n 1"]
+        running: true
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var typeFilePath = text.trim()
+                if (typeFilePath !== "") {
+                    root.cpuTempPath = typeFilePath.replace("type", "temp")                    
+                    fileCpuTemp.reload()
+                }
+            }
+        }
+    }
+
+    FileView { id: fileFreq; path: "/proc/cpuinfo" }
+    FileView { id: fileTemp; path: root.cpuTempPath }
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }
 
@@ -126,7 +164,7 @@ Singleton {
             LC_ALL: "C"
         })
         command: ["bash", "-c", "lscpu | grep 'CPU max MHz' | awk '{print $4}'"]
-        running: true
+        running: false
         stdout: StdioCollector {
             id: outputCollector
             onStreamFinished: {
@@ -134,4 +172,22 @@ Singleton {
             }
         }
     }
+
+    // Process {
+    //     id: findFansRPM
+    //     environment: ({
+    //         LANG: "C",
+    //         LC_ALL: "C"
+    //     })
+    //     command: ["bash", "-c", "sensors | grep 'Fan' | awk '{print $3}'"]
+    //     running: false
+    //     stdout: StdioCollector {
+    //         id: outputCollector_fan
+    //         onStreamFinished: {
+    //             var lines = outputCollector_fan.text.trim().split("\n")
+    //             root.fan1RPM = parseInt(lines[0])
+    //             root.fan2RPM = parseInt(lines[1])
+    //         }
+    //     }
+    // }
 }
