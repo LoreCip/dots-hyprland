@@ -101,27 +101,27 @@ StyledPopup {
             }
         }
 
-        // Column {
-        //     anchors.top: parent.top
-        //     spacing: 8
-        // 
-        //     StyledPopupHeaderRow {
-        //         icon: "mode_fan"
-        //         label: Translation.tr("Fans:")
-        //     }
-        //     Column {
-        //         spacing: 4
-        //         StyledPopupValueRow {
-        //             icon: "toys_fan"
-        //             label: Translation.tr("Fan %1:").arg(1)
-        //             value: `${ResourceUsage.fan1RPM || 0} RPM`
-        //         }
-        //         StyledPopupValueRow {
-        //                 icon: "toys_fan"
-        //                 label: Translation.tr("Fan %1:").arg(2)
-        //                 value: `${ResourceUsage.fan2RPM || 0} RPM`
-        //         }
-        //     }
-        // }
+        Column {
+            anchors.top: parent.top
+            spacing: 8
+        
+            StyledPopupHeaderRow {
+                icon: "mode_fan"
+                label: Translation.tr("Fans:")
+            }
+            Column {
+                spacing: 4
+                StyledPopupValueRow {
+                    icon: "toys_fan"
+                    label: Translation.tr("Fan %1:").arg(1)
+                    value: `${ResourceUsage.fan1RPM || 0} RPM`
+                }
+                StyledPopupValueRow {
+                        icon: "toys_fan"
+                        label: Translation.tr("Fan %1:").arg(2)
+                        value: `${ResourceUsage.fan2RPM || 0} RPM`
+                }
+            }
+        }
     }
 }
