@@ -28,6 +28,8 @@ Singleton {
     property var previousCpuStats
 
     property string cpuTempPath: ""
+    property string fan1RPMPath: ""
+    property string fan2RPMPath: ""
     property string maxAvailableMemoryString: kbToGbString(ResourceUsage.memoryTotal)
     property string maxAvailableSwapString: kbToGbString(ResourceUsage.swapTotal)
     property string maxAvailableCpuString: "--"
@@ -94,6 +96,8 @@ Singleton {
             fileStat.reload()
             fileTemp.reload()
             fileFreq.reload()
+            fileFan1RPM.reload()
+            fileFan2RPM.reload()
 
             // Parse memory and swap usage
             const textMeminfo = fileMeminfo.text()
@@ -119,7 +123,7 @@ Singleton {
                 previousCpuStats = { total, idle }
             }
 
-            // Compute CPU temperature
+            // Read CPU temperature
             const rawTemp = Number(fileTemp.text())
             if (!isNaN(rawTemp)) {
                 cpuTemperature = rawTemp / 1000 // C
@@ -128,7 +132,15 @@ Singleton {
             // Compute CPU avg frequency
             root.updateCpuAvgFrequency()
 
-            // root.findFansRPM.start()
+            // Read fans RPM
+            const rawFan1 = Number(fileFan1RPM.text())
+            if (!isNaN(rawFan1)) {
+                fan1RPM = rawFan1
+            }
+            const rawFan2 = Number(fileFan2RPM.text())
+            if (!isNaN(rawFan2)) {
+                fan2RPM = rawFan2
+            }
 
             root.updateHistories()
             interval = Config.options?.resources?.updateInterval ?? 1000
@@ -146,14 +158,33 @@ Singleton {
                 var typeFilePath = text.trim()
                 if (typeFilePath !== "") {
                     root.cpuTempPath = typeFilePath.replace("type", "temp")                    
-                    fileCpuTemp.reload()
+                    fileTemp.reload()
                 }
+            }
+        }
+    }
+
+    // Find files with correct fan measurement
+    Process {
+        id: findRPMPathProc
+        command: ["bash", "-c", "grep -Rl . /sys/class/hwmon/hwmon*/fan*_input"]
+        running: true
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var rpmFilePath = text.trim().split("\n")
+                root.fan1RPMPath = rpmFilePath[0]
+                root.fan2RPMPath = rpmFilePath[1]                  
+                fileFan1RPM.reload()
+                fileFan2RPM.reload()
             }
         }
     }
 
     FileView { id: fileFreq; path: "/proc/cpuinfo" }
     FileView { id: fileTemp; path: root.cpuTempPath }
+    FileView { id: fileFan1RPM; path: root.fan1RPMPath }
+    FileView { id: fileFan2RPM; path: root.fan2RPMPath }
 	FileView { id: fileMeminfo; path: "/proc/meminfo" }
     FileView { id: fileStat; path: "/proc/stat" }
 
@@ -172,22 +203,4 @@ Singleton {
             }
         }
     }
-
-    // Process {
-    //     id: findFansRPM
-    //     environment: ({
-    //         LANG: "C",
-    //         LC_ALL: "C"
-    //     })
-    //     command: ["bash", "-c", "sensors | grep 'Fan' | awk '{print $3}'"]
-    //     running: false
-    //     stdout: StdioCollector {
-    //         id: outputCollector_fan
-    //         onStreamFinished: {
-    //             var lines = outputCollector_fan.text.trim().split("\n")
-    //             root.fan1RPM = parseInt(lines[0])
-    //             root.fan2RPM = parseInt(lines[1])
-    //         }
-    //     }
-    // }
 }
