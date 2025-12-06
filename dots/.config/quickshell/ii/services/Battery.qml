@@ -14,7 +14,7 @@ Singleton {
     property bool isCharging: chargeState == UPowerDeviceState.Charging
     property bool isPluggedIn: isCharging || chargeState == UPowerDeviceState.PendingCharge
     property real percentage: UPower.displayDevice?.percentage ?? 1
-    property bool isChargeLimited: isPluggedIn && !isCharging && percentage < 1 && available
+    property bool isChargeLimited: false
     readonly property bool allowAutomaticSuspend: Config.options.battery.automaticSuspend
     readonly property bool soundEnabled: Config.options.sounds.battery
 
@@ -104,6 +104,21 @@ Singleton {
             Audio.playSystemSound("power-plug")
         } else {
             Audio.playSystemSound("power-unplug")
+        }
+    }
+
+    Process{
+        id: checkIfChargeIsLimited
+        command: ["bash", "-c", "grep . /sys/bus/platform/drivers/*/*/conservation_mode"]
+        running: true
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const rawCheck = parseInt(text.trim())
+                if (!isNaN(rawCheck)) {
+                    root.isChargeLimited = rawCheck == 1 ? true : false
+                }
+            }
         }
     }
 }
