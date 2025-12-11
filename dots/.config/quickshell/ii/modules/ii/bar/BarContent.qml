@@ -63,10 +63,6 @@ Item { // Bar content region
         onScrollDown: root.brightnessMonitor.setBrightness(root.brightnessMonitor.brightness - 0.05)
         onScrollUp: root.brightnessMonitor.setBrightness(root.brightnessMonitor.brightness + 0.05)
         onMovedAway: GlobalStates.osdBrightnessOpen = false
-        //onPressed: event => {
-        //    if (event.button === Qt.LeftButton)
-        //        GlobalStates.sidebarLeftOpen = !GlobalStates.sidebarLeftOpen;
-        //}
 
         // Visual content
         ScrollHint {
@@ -80,25 +76,12 @@ Item { // Bar content region
 
         RowLayout {
             id: leftSectionRowLayout
-            anchors.fill: parent
-            spacing: 0
+            spacing: 4
 
             Item { 
                 Layout.alignment: Qt.AlignVCenter
                 Layout.leftMargin: Appearance.rounding.screenRounding * 0.5
             }
-
-            // LeftSidebarButton { // Left sidebar button
-            //    Layout.alignment: Qt.AlignVCenter
-            //    Layout.leftMargin: Appearance.rounding.screenRounding
-            //    colBackground: barLeftSideMouseArea.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
-            // }
-            // ActiveWindow {
-            //     visible: root.useShortenedForm === 0
-            //     Layout.rightMargin: Appearance.rounding.screenRounding
-            //     Layout.fillWidth: true
-            //     Layout.fillHeight: true
-            // }
 
             BarGroup{
 
@@ -133,6 +116,11 @@ Item { // Bar content region
                     }
                 }
             }
+
+            Resources {
+                alwaysShowAllResources: root.useShortenedForm === 2
+                Layout.fillWidth: root.useShortenedForm === 2
+            }
         }
     }
 
@@ -144,26 +132,6 @@ Item { // Bar content region
             horizontalCenter: parent.horizontalCenter
         }
         spacing: 4
-
-        BarGroup {
-            id: leftCenterGroup
-            anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: root.centerSideModuleWidth
-
-            Resources {
-                alwaysShowAllResources: root.useShortenedForm === 2
-                Layout.fillWidth: root.useShortenedForm === 2
-            }
-
-            // Media {
-            //     visible: root.useShortenedForm < 2
-            //     Layout.fillWidth: true
-            // }
-        }
-
-        VerticalBarSeparator {
-            visible: Config.options?.bar.borderless
-        }
 
         BarGroup {
             id: middleCenterGroup
@@ -187,41 +155,14 @@ Item { // Bar content region
             }
         }
 
-        VerticalBarSeparator {
-            visible: Config.options?.bar.borderless
-        }
-
         MouseArea {
             id: rightCenterGroup
             anchors.verticalCenter: parent.verticalCenter
             implicitWidth: root.centerSideModuleWidth
             implicitHeight: rightCenterGroupContent.implicitHeight
-
+            
             onPressed: {
                 GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
-            }
-
-            BarGroup {
-                id: rightCenterGroupContent
-                anchors.fill: parent
-
-                ClockWidget {
-                    showDate: (Config.options.bar.verbose && root.useShortenedForm < 2)
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.fillWidth: true
-                }
-
-                UtilButtons {
-                    visible: (Config.options.bar.verbose && root.useShortenedForm === 0)
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                PrinterIndicator {}
-
-                BatteryIndicator {
-                    visible: (root.useShortenedForm < 2 && Battery.available)
-                    Layout.alignment: Qt.AlignVCenter
-                }
             }
         }
     }
@@ -260,7 +201,7 @@ Item { // Bar content region
         RowLayout {
             id: rightSectionRowLayout
             anchors.fill: parent
-            spacing: 5
+            spacing: 8
             layoutDirection: Qt.RightToLeft
 
             RippleButton { // Right sidebar button
@@ -294,43 +235,12 @@ Item { // Bar content region
                 RowLayout {
                     id: indicatorsRowLayout
                     anchors.centerIn: parent
-                    property real realSpacing: 15
+                    property real realSpacing: 10
                     spacing: 0
 
                     Revealer {
-                        reveal: Audio.sink?.audio?.muted ?? false
-                        Layout.fillHeight: true
-                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
-                        Behavior on Layout.rightMargin {
-                            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                        }
-                        MaterialSymbol {
-                            text: "volume_off"
-                            iconSize: Appearance.font.pixelSize.larger
-                            color: rightSidebarButton.colText
-                        }
-                    }
-                    Revealer {
-                        reveal: Audio.source?.audio?.muted ?? false
-                        Layout.fillHeight: true
-                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
-                        Behavior on Layout.rightMargin {
-                            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                        }
-                        MaterialSymbol {
-                            text: "mic_off"
-                            iconSize: Appearance.font.pixelSize.larger
-                            color: rightSidebarButton.colText
-                        }
-                    }
-                    HyprlandXkbIndicator {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.rightMargin: indicatorsRowLayout.realSpacing
-                        color: rightSidebarButton.colText
-                    }
-                    Revealer {
                         reveal: Notifications.silent || Notifications.unread > 0
-                        Layout.fillHeight: true
+                        // Layout.fillHeight: true
                         Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
                         implicitHeight: reveal ? notificationUnreadCount.implicitHeight : 0
                         implicitWidth: reveal ? notificationUnreadCount.implicitWidth : 0
@@ -341,11 +251,52 @@ Item { // Bar content region
                             id: notificationUnreadCount
                         }
                     }
+
+                    PrinterIndicator {
+                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Revealer {
+                        reveal: Audio.sink?.audio?.muted ?? false
+                        // Layout.fillHeight: true
+                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
+                        Behavior on Layout.rightMargin {
+                            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                        }
+                        MaterialSymbol {
+                            text: "volume_off"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: rightSidebarButton.colText
+                        }
+                    }
+
+                    Revealer {
+                        reveal: Audio.source?.audio?.muted ?? false
+                        // Layout.fillHeight: true
+                        Layout.rightMargin: reveal ? indicatorsRowLayout.realSpacing : 0
+                        Behavior on Layout.rightMargin {
+                            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                        }
+                        MaterialSymbol {
+                            text: "mic_off"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: rightSidebarButton.colText
+                        }
+                    }
+                    
+                    HyprlandXkbIndicator {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                        color: rightSidebarButton.colText
+                    }
+                    
                     MaterialSymbol {
                         text: Network.materialSymbol
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
                     }
+                    
                     MaterialSymbol {
                         Layout.leftMargin: indicatorsRowLayout.realSpacing
                         visible: BluetoothStatus.available
@@ -353,15 +304,28 @@ Item { // Bar content region
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
                     }
+
+                    BatteryIndicator {
+                        visible: (root.useShortenedForm < 2 && Battery.available)
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: indicatorsRowLayout.realSpacing
+                    }
+
+                    ClockWidget {
+                        showDate: (Config.options.bar.verbose && root.useShortenedForm < 2)
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.fillWidth: true
+                        Layout.leftMargin: indicatorsRowLayout.realSpacing
+                    }
                 }
             }
 
-            SysTray {
-                visible: root.useShortenedForm === 0
-                Layout.fillWidth: false
-                Layout.fillHeight: true
-                invertSide: Config?.options.bar.bottom
-            }
+            // SysTray {
+            //     visible: root.useShortenedForm === 0
+            //     Layout.fillWidth: false
+            //     Layout.fillHeight: true
+            //     invertSide: Config?.options.bar.bottom
+            // }
 
             Item {
                 Layout.fillWidth: true
