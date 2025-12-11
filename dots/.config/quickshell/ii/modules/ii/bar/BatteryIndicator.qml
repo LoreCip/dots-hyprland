@@ -18,6 +18,7 @@ MouseArea {
     implicitHeight: Appearance.sizes.barHeight
 
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
+    acceptedButtons: Qt.NoButton
 
     ClippedProgressBar {
         id: batteryProgress

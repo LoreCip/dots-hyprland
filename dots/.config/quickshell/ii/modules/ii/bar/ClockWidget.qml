@@ -41,6 +41,7 @@ Item {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: !Config.options.bar.tooltips.clickToShow
+        acceptedButtons: Qt.NoButton
 
         ClockWidgetPopup {
             hoverTarget: mouseArea
