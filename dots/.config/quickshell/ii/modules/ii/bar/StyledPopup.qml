@@ -35,11 +35,19 @@ LazyLoader {
         exclusiveZone: 0
         margins {
             left: {
-                if (!Config.options.bar.vertical) return root.QsWindow?.mapFromItem(
+                var centeredX = root.QsWindow?.mapFromItem(
                     root.hoverTarget, 
                     (root.hoverTarget.width - popupBackground.implicitWidth) / 2, 0
                 ).x;
-                return Appearance.sizes.verticalBarWidth
+
+                var screenWidth = popupWindow.screen.width;
+                var popupWidth = popupBackground.implicitWidth;
+                var rightMargin = 10; 
+                if ((centeredX + popupWidth) > (screenWidth - rightMargin)) {
+                    return screenWidth - popupWidth - rightMargin;
+                }
+
+                return centeredX;
             }
             top: {
                 if (!Config.options.bar.vertical) return Appearance.sizes.barHeight;
