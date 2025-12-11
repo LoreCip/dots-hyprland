@@ -117,7 +117,12 @@ Singleton {
             const match = root.ddcMonitors.find(m => m.name === screen.name && !root.monitors.slice(0, root.monitors.indexOf(this)).some(mon => mon.busNum === m.busNum));
             isDdc = !!match;
             busNum = match?.busNum ?? "";
-            initProc.command = isDdc ? ["ddcutil", "-b", busNum, "getvcp", "10", "--brief"] : ["sh", "-c", `echo "a b c $(brightnessctl g) $(brightnessctl m)"`];
+            
+            // MODIFICA 1: Specificare '-d intel_backlight' nel comando di inizializzazione
+            initProc.command = isDdc 
+                ? ["ddcutil", "-b", busNum, "getvcp", "10", "--brief"] 
+                : ["sh", "-c", `echo "a b c $(brightnessctl -d intel_backlight g) $(brightnessctl -d intel_backlight m)"`];
+            
             initProc.running = true;
         }
 
@@ -151,16 +156,17 @@ Singleton {
                 setProc.command = ["ddcutil", "-b", busNum, "setvcp", "10", rawValueRounded];
                 setProc.startDetached();
             } else {
-                const valuePercentNumber = Math.floor(brightnessValue * 100);
+                const valuePercentNumber = Math.max(1, Math.floor(brightnessValue * 100));
                 let valuePercent = `${valuePercentNumber}%`;
                 if (valuePercentNumber == 0) valuePercent = "1"; // Prevent fully black
-                setProc.command = ["brightnessctl", "--class", "backlight", "s", valuePercent, "--quiet"];
+                // MODIFICA 2: Usare '-d intel_backlight' e 'set' invece di '--class backlight'
+                setProc.command = ["brightnessctl", "-d", "intel_backlight", "set", valuePercent, "--quiet"];
                 setProc.startDetached();
             }
         }
 
         function setBrightness(value: real): void {
-            value = Math.max(0, Math.min(1, value));
+            value = Math.max(0.01, Math.min(1, value));
             monitor.brightness = value;
         }
 
