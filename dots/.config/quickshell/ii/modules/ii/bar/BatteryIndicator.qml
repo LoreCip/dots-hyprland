@@ -37,7 +37,7 @@ MouseArea {
                     bottom: parent.bottom
                     bottomMargin: (parent.height - height) / 2
                 }
-                spacing: 0
+                spacing: 3
 
                 MaterialSymbol {
                     id: boltIcon
