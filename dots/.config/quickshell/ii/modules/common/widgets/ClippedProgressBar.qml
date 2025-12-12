@@ -10,9 +10,10 @@ import Qt5Compat.GraphicalEffects
  */
 ProgressBar {
     id: root
+    property bool battery: false
     property bool vertical: false
-    property real valueBarWidth: 40
-    property real valueBarHeight: 21
+    property real valueBarWidth: 30
+    property real valueBarHeight: 18
     property color highlightColor: Appearance?.colors.colOnSecondaryContainer ?? "#685496"
     property color trackColor: ColorUtils.transparentize(highlightColor, 0.5) ?? "#F1D3F9"
     property alias radius: contentItem.radius
@@ -29,7 +30,7 @@ ProgressBar {
 
     text: Math.round(value * 100)
     font {
-        pixelSize: 13
+        pixelSize: 14
         weight: text.length > 2 ? Font.Medium : Font.DemiBold
     }
 
@@ -41,7 +42,7 @@ ProgressBar {
     contentItem: Rectangle {
         id: contentItem
         anchors.fill: parent
-        radius: 9999
+        radius: battery ? 4 : 9999
         color: root.trackColor
         visible: false
 
@@ -77,6 +78,28 @@ ProgressBar {
 
             radius: Appearance.rounding.unsharpen
             color: root.highlightColor
+        }
+    }
+
+    Rectangle {
+        id: batteryPole
+        visible: root.battery
+        color: root.trackColor
+        
+        width: root.vertical ? parent.width * 0.4 : 3
+        height: root.vertical ? 3 : parent.height * 0.4
+        
+        radius: 1.5
+
+        anchors {
+            bottom: root.vertical ? parent.top : undefined
+            left: root.vertical ? undefined : parent.right
+            
+            horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
+            verticalCenter: root.vertical ? undefined : parent.verticalCenter
+            
+            bottomMargin: 1
+            leftMargin: 1
         }
     }
 

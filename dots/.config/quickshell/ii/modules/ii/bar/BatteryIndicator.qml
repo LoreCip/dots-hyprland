@@ -25,7 +25,10 @@ MouseArea {
         anchors.centerIn: parent
         value: percentage
         highlightColor: (isLow && !isCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
-
+        battery: true
+        valueBarWidth: 40
+        valueBarHeight: 21
+        
         Item {
             anchors.centerIn: parent
             width: batteryProgress.valueBarWidth
@@ -46,7 +49,7 @@ MouseArea {
                     Layout.rightMargin: -2
                     fill: 1
                     text: "bolt"
-                    iconSize: Appearance.font.pixelSize.smaller
+                    iconSize: Appearance.font.pixelSize.small
                     visible: isCharging && percentage < 1 
 		            opacity: (isCharging && percentage < 1) ? 1 : 0
 
@@ -64,7 +67,7 @@ MouseArea {
                     Layout.leftMargin: -2
                     Layout.rightMargin: -2
                     text: "eco"
-                    iconSize: Appearance.font.pixelSize.smaller
+                    iconSize: Appearance.font.pixelSize.small
                     visible: isChargeLimited && !isCharging
             	}
                 StyledText {
