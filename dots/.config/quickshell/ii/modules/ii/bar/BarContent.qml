@@ -89,7 +89,7 @@ Item { // Bar content region
 
                 IconToolbarButton {
                     id: toggleButton
-                    text: root.centerWidgetIndex === 1 ? "queue_music" : "web_asset"
+                    text: root.centerWidgetIndex === 1 ? "web_asset" : "queue_music"
                     
                     onClicked: {
                         root.centerWidgetIndex = root.centerWidgetIndex === 0 ? 1 : 0
