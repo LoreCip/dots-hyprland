@@ -54,7 +54,6 @@ Item {
 
     // --- FUNZIONE ESECUTIVA (Lanciata dal Timer) ---
     function executeCoverUpdate() {
-        
         if (root.artUrl.startsWith("file://")) {
             root.imageToShow = root.artUrl;
         } else {
@@ -117,7 +116,9 @@ Item {
     }
 
     MouseArea {
+        id: navMouseArea // ID aggiunto per riferimento
         anchors.fill: parent
+        hoverEnabled: true // Fondamentale per rilevare il passaggio del mouse
         acceptedButtons: Qt.AllButtons
         onPressed: (event) => {
             if (event.button === Qt.MiddleButton) activePlayer.togglePlaying();
@@ -168,7 +169,7 @@ Item {
                 antialiasing: true
             }
 
-            // Fallback (mostrato durante caricamento o se manca cover)
+            // Fallback
             Rectangle { 
                 anchors.fill: parent
                 radius: 6
@@ -198,7 +199,7 @@ Item {
                 font: Appearance.font.use(Appearance.font.name, Appearance.font.pixelSize.normal, 500)
                 anchors.verticalCenter: parent.verticalCenter
                 
-                function updateMarquee() {
+                function resetPosition() {
                     marqueeAnim.stop();
 
                     var containerW = marqueeContainer.width;
@@ -208,41 +209,49 @@ Item {
 
                     if (textW > containerW) {
                         mediaLabel.x = 0;
-                        if (root.isPlaying) marqueeAnim.start();
+                        mediaLabel.elide = Text.ElideRight;
                     } else {
-                        mediaLabel.x = Math.max(0, (containerW - textW) / 2);
+                        mediaLabel.x = (containerW - textW) / 2;
+                        mediaLabel.elide = Text.ElideNone;
                     }
                 }
 
-                // Trigger: Ricalcola se cambia testo, dimensioni o stato play
-                onTextChanged: updateMarquee()
-                onWidthChanged: updateMarquee()
+                onTextChanged: resetPosition()
+                onWidthChanged: { if (!marqueeAnim.running) resetPosition() }
+                
+                Connections {
+                    target: navMouseArea
+                    function onContainsMouseChanged() {
+                        if (!navMouseArea.containsMouse) {
+                            mediaLabel.resetPosition();
+                        } else if (mediaLabel.width > marqueeContainer.width) {
+                            mediaLabel.elide = Text.ElideNone;
+                            marqueeAnim.restart();
+                        }
+                    }
+                }
                 
                 Connections {
                     target: marqueeContainer
-                    function onWidthChanged() { mediaLabel.updateMarquee() }
-                }
-                
-                Connections {
-                    target: root
-                    function onIsPlayingChanged() { mediaLabel.updateMarquee() }
+                    function onWidthChanged() { mediaLabel.resetPosition() }
                 }
 
-                Component.onCompleted: updateMarquee()
+                Component.onCompleted: resetPosition()
 
                 SequentialAnimation on x {
                     id: marqueeAnim
-                    running: false
+                    running: false 
                     loops: Animation.Infinite
                     
-                    ScriptAction { script: mediaLabel.x = 0 }
-                    PauseAnimation { duration: 2000 }
+                    PauseAnimation { duration: 500 }
+                    
                     NumberAnimation {
                         from: 0
-                        to: marqueeContainer.width - mediaLabel.width 
+                        to: marqueeContainer.width - mediaLabel.width
                         duration: (mediaLabel.width - marqueeContainer.width) * 40 
                         easing.type: Easing.Linear
                     }
+                    
                     PauseAnimation { duration: 1000 }
                     NumberAnimation { to: 0; duration: 500; easing.type: Easing.InOutQuad }
                 }
