@@ -15,46 +15,66 @@ import Quickshell.Hyprland
 Scope {
     id: root
     property bool visible: false
+    
+    // Riferimenti al controller (dal file precedente)
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property var realPlayers: MprisController.players
-    readonly property var meaningfulPlayers: filterDuplicatePlayers(realPlayers)
+
+    // --- FIX PERFORMANCE: Non usiamo più un binding diretto qui ---
+    // Inizializziamo come array vuoto
+    property var meaningfulPlayers: []
+
+    // Quando la lista grezza dei player cambia (qualcuno apre/chiude spotify), ricalcoliamo.
+    onRealPlayersChanged: updateMeaningfulPlayers()
+    
+    // Ricalcoliamo anche all'avvio per essere sicuri
+    Component.onCompleted: updateMeaningfulPlayers()
+
+    // --- FUNZIONE DI FILTRAGGIO IMPERATIVA ---
+    // Eseguita solo quando necessario, rompe la dipendenza reattiva da .position
+    function updateMeaningfulPlayers() {
+        let players = root.realPlayers;
+        let filtered = [];
+        let used = new Set();
+
+        for (let i = 0; i < players.length; ++i) {
+            if (used.has(i)) continue;
+            
+            let p1 = players[i];
+            let group = [i];
+
+            for (let j = i + 1; j < players.length; ++j) {
+                let p2 = players[j];
+                // Qui leggiamo .position, ma essendo dentro una funzione chiamata una tantum,
+                // NON crea un binding continuo. È una lettura "snapshot".
+                const isDuplicateTitle = (p1.trackTitle && p2.trackTitle && (p1.trackTitle.includes(p2.trackTitle) || p2.trackTitle.includes(p1.trackTitle)));
+                const isDuplicateStream = (Math.abs(p1.position - p2.position) <= 2 && Math.abs(p1.length - p2.length) <= 2);
+
+                if (isDuplicateTitle || isDuplicateStream) {
+                    group.push(j);
+                }
+            }
+
+            // Scegli quello con la copertina, o il primo
+            let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
+            if (chosenIdx === undefined) chosenIdx = group[0];
+
+            filtered.push(players[chosenIdx]);
+            group.forEach(idx => used.add(idx));
+        }
+        
+        root.meaningfulPlayers = filtered;
+    }
+
     readonly property real osdWidth: Appearance.sizes.osdWidth
     readonly property real widgetWidth: Appearance.sizes.mediaControlsWidth
     readonly property real widgetHeight: Appearance.sizes.mediaControlsHeight
     property real popupRounding: Appearance.rounding.screenRounding - Appearance.sizes.hyprlandGapsOut + 1
     property list<real> visualizerPoints: []
 
-    function filterDuplicatePlayers(players) {
-        let filtered = [];
-        let used = new Set();
-
-        for (let i = 0; i < players.length; ++i) {
-            if (used.has(i))
-                continue;
-            let p1 = players[i];
-            let group = [i];
-
-            // Find duplicates by trackTitle prefix
-            for (let j = i + 1; j < players.length; ++j) {
-                let p2 = players[j];
-                if (p1.trackTitle && p2.trackTitle && (p1.trackTitle.includes(p2.trackTitle) || p2.trackTitle.includes(p1.trackTitle)) || (p1.position - p2.position <= 2 && p1.length - p2.length <= 2)) {
-                    group.push(j);
-                }
-            }
-
-            // Pick the one with non-empty trackArtUrl, or fallback to the first
-            let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
-            if (chosenIdx === undefined)
-                chosenIdx = group[0];
-
-            filtered.push(players[chosenIdx]);
-            group.forEach(idx => used.add(idx));
-        }
-        return filtered;
-    }
-
     Process {
         id: cavaProc
+        // Ottimizzazione: gira solo se il widget è aperto
         running: mediaControlsLoader.active
         onRunningChanged: {
             if (!cavaProc.running) {
@@ -64,7 +84,7 @@ Scope {
         command: ["cava", "-p", `${FileUtils.trimFileProtocol(Directories.scriptPath)}/cava/raw_output_config.txt`]
         stdout: SplitParser {
             onRead: data => {
-                // Parse `;`-separated values into the visualizerPoints array
+                // Parse `;`-separated values
                 let points = data.split(";").map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
                 root.visualizerPoints = points;
             }
@@ -75,8 +95,13 @@ Scope {
         id: mediaControlsLoader
         active: GlobalStates.mediaControlsOpen
         onActiveChanged: {
+            // Se chiudiamo e non ci sono player, aggiorniamo lo stato globale
             if (!mediaControlsLoader.active && root.realPlayers.length === 0) {
                 GlobalStates.mediaControlsOpen = false;
+            }
+            // Quando apriamo il widget, ricalcoliamo la lista per sicurezza (magari i titoli sono cambiati mentre era chiuso)
+            if (mediaControlsLoader.active) {
+                root.updateMeaningfulPlayers();
             }
         }
 
@@ -100,7 +125,6 @@ Scope {
             margins {
                 top: Config.options.bar.vertical ? ((panelWindow.screen.height / 2) - widgetHeight * 1.5) : Appearance.sizes.barHeight
                 bottom: Appearance.sizes.barHeight
-                // left: Config.options.bar.vertical ? Appearance.sizes.barHeight : ((mediaControlsRoot.screen.width / 2) - (osdWidth / 2) - widgetWidth)
                 left: Config.options.bar.vertical ? Appearance.sizes.barHeight : Appearance.sizes.baseBarHeight
                 right: Appearance.sizes.barHeight
             }
@@ -125,7 +149,7 @@ Scope {
             ColumnLayout {
                 id: playerColumnLayout
                 anchors.fill: parent
-                spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
+                spacing: -Appearance.sizes.elevationMargin 
 
                 Repeater {
                     model: ScriptModel {
@@ -152,7 +176,10 @@ Scope {
                     }
                     Layout.leftMargin: Appearance.sizes.hyprlandGapsOut
                     Layout.rightMargin: Appearance.sizes.hyprlandGapsOut
+                    
+                    // Nota: meaningfulPlayers è un array JS, quindi .length funziona
                     visible: root.meaningfulPlayers.length === 0
+                    
                     implicitWidth: placeholderBackground.implicitWidth + Appearance.sizes.elevationMargin
                     implicitHeight: placeholderBackground.implicitHeight + Appearance.sizes.elevationMargin
 
@@ -211,25 +238,16 @@ Scope {
     GlobalShortcut {
         name: "mediaControlsToggle"
         description: "Toggles media controls on press"
-
-        onPressed: {
-            GlobalStates.mediaControlsOpen = !GlobalStates.mediaControlsOpen;
-        }
+        onPressed: GlobalStates.mediaControlsOpen = !GlobalStates.mediaControlsOpen;
     }
     GlobalShortcut {
         name: "mediaControlsOpen"
         description: "Opens media controls on press"
-
-        onPressed: {
-            GlobalStates.mediaControlsOpen = true;
-        }
+        onPressed: GlobalStates.mediaControlsOpen = true;
     }
     GlobalShortcut {
         name: "mediaControlsClose"
         description: "Closes media controls on press"
-
-        onPressed: {
-            GlobalStates.mediaControlsOpen = false;
-        }
+        onPressed: GlobalStates.mediaControlsOpen = false;
     }
 }
