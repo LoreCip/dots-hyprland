@@ -164,7 +164,7 @@ Item {
                 anchors.fill: parent
                 source: coverSource
                 maskSource: coverMask
-                visible: root.imageToShow !== "" && coverSource.status === Image.Ready
+                visible: root.imageToShow !== "" && coverSource.status === Image.Ready && root.isPlaying
                 antialiasing: true
             }
 
@@ -173,7 +173,7 @@ Item {
                 anchors.fill: parent
                 radius: 6
                 color: Appearance.colors.colSecondaryContainer
-                visible: !parent.children[2].visible 
+                visible: !parent.children[2].visible || !root.isPlaying 
                 
                 MaterialSymbol {
                     anchors.centerIn: parent
