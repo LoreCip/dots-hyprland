@@ -205,7 +205,7 @@ Item { // Player instance
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: blendedColors.colSubtext
                     elide: Text.ElideRight
-                    text: root.player?.trackArtist
+                    text: StringUtils.cleanMusicTitle(root.player?.trackArtist)
                     animateChange: true
                     animationDistanceX: 6
                     animationDistanceY: 0
