@@ -189,19 +189,13 @@ Singleton {
      * @returns { string }
      */
     function cleanMusicTitle(title) {
-        if (!title)
-            return "";
-        // Brackets
-        title = title.replace(/^ *\([^)]*\) */g, " "); // Round brackets
-        title = title.replace(/^ *\[[^\]]*\] */g, " "); // Square brackets
-        title = title.replace(/^ *\{[^\}]*\} */g, " "); // Curly brackets
-        // Japenis brackets
-        title = title.replace(/^ *【[^】]*】/, ""); // Touhou
-        title = title.replace(/^ *《[^》]*》/, ""); // ??
-        title = title.replace(/^ *「[^」]*」/, ""); // OP/ED thingie
-        title = title.replace(/^ *『[^』]*』/, ""); // OP/ED thingie
+        if (!title) return "";
 
-        return title.trim();
+        title = title.replace(/\.(mp3|flac|wav|m4a|ogg|opus)$/i, "");
+        title = title.replace(/\s*[-|]\s*(YouTube|Topic|Vevo|Official Video|Lyrics)\s*$/i, "");
+        title = title.replace(/\s*YouTube\s*$/i, "");
+        title = title.replace(/\s*[\(\[\{【《「『][^\)\]\}】》」』]*[\)\]\}】》」』]/g, "");
+        return title.replace(/\s+/g, " ").trim();
     }
 
     /**
