@@ -99,7 +99,7 @@ LazyLoader {
             }
 
             border.width: 1
-            border.color: Appearance.colors.colLayer0Border
+            border.color: Appearance.colors.colLayer0 // Appearance.colors.colLayer0Border
             
             transform: Translate {
                 id: slideAnim
@@ -123,14 +123,16 @@ LazyLoader {
                 }
             }
 
-            // --- CURVE DI CONNESSIONE (Le "Ali") ---
-            // Ala Sinistra (Corretta)
+            // Ala Sinistra
             Shape {
                 width: popupBackground.curveRadius
                 height: popupBackground.curveRadius
                 anchors.right: parent.left
                 anchors.top: parent.top
                 
+                layer.enabled: true
+                layer.samples: 16
+
                 ShapePath {
                     fillColor: popupBackground.color
                     strokeColor: "transparent"
