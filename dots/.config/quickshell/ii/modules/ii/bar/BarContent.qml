@@ -103,17 +103,17 @@ Item { // Bar content region
                     
                     currentIndex: root.centerWidgetIndex
 
+                    Media {
+                        visible: root.useShortenedForm < 2
+                        Layout.fillWidth: true
+                    }
+
                     ActiveWindow {
                         visible: root.useShortenedForm === 0
                         Layout.rightMargin: Appearance.rounding.screenRounding
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                    }
-
-                    Media {
-                        visible: root.useShortenedForm < 2
-                        Layout.fillWidth: true
-                    }
+                    }                    
                 }
             }
 
