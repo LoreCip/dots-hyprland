@@ -15,19 +15,29 @@ import Quickshell.Services.Mpris
 Item { // Player instance
     id: root
     required property MprisPlayer player
+    
+    // --- PROPRIETÀ ---
     property var artUrl: player?.trackArtUrl
     property string artDownloadLocation: Directories.coverArt
     property string artFileName: Qt.md5(artUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
-    property color artDominantColor: ColorUtils.mix((colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary), Appearance.colors.colPrimaryContainer, 0.8) || Appearance.m3colors.m3secondaryContainer
+    
+    // Fallback sicuro per il colore
+    property color artDominantColor: ColorUtils.mix(
+        (colorQuantizer?.colors[0] ?? Appearance.colors.colPrimary), 
+        Appearance.colors.colPrimaryContainer, 0.8
+    ) || Appearance.m3colors.m3secondaryContainer
+
     property bool downloaded: false
     property list<real> visualizerPoints: []
-    property real maxVisualizerValue: 1000 // Max value in the data points
-    property int visualizerSmoothing: 2 // Number of points to average for smoothing
+    property real maxVisualizerValue: 1000 
+    property int visualizerSmoothing: 2 
     property real radius
 
-    property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(artFilePath) : ""
+    // Controlliamo se il file esiste davvero prima di provare a mostrarlo
+    property string displayedArtFilePath: root.downloaded ? Qt.resolvedUrl(root.artFilePath) : ""
 
+    // --- COMPONENTI INTERNI ---
     component TrackChangeButton: RippleButton {
         implicitWidth: 24
         implicitHeight: 24
@@ -44,59 +54,77 @@ Item { // Player instance
             color: blendedColors.colOnSecondaryContainer
             text: iconName
 
-            Behavior on color {
-                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-            }
+            // FIX LEAK: Usiamo un'animazione standard invece di creare oggetti
+            Behavior on color { ColorAnimation { duration: 200 } }
         }
     }
 
-    Timer { // Force update for revision
-        running: root.player?.playbackState == MprisPlaybackState.Playing
+    // --- LOGICA DI AGGIORNAMENTO ---
+    
+    // Timer per la barra di progresso (Mpris spesso non notifica la posizione in continuo)
+    Timer { 
+        running: root.player?.playbackState === MprisPlaybackState.Playing
         interval: Config.options.resources.updateInterval
         repeat: true
-        onTriggered: {
-            root.player.positionChanged()
-        }
+        onTriggered: root.player.positionChanged()
     }
 
+    // Gestione download copertine
     onArtFilePathChanged: {
-        if (root.artUrl.length == 0) {
+        if (!root.artUrl || root.artUrl.length === 0) {
             root.artDominantColor = Appearance.m3colors.m3secondaryContainer
+            root.downloaded = false
             return;
         }
 
-        // Binding does not work in Process
+        // Se l'immagine è già cambiata mentre scaricavamo quella prima, fermiamo tutto
+        if (coverArtDownloader.running) {
+            coverArtDownloader.kill(); 
+        }
+
+        root.downloaded = false
+        
+        // Aggiorniamo i parametri del processo
         coverArtDownloader.targetFile = root.artUrl 
         coverArtDownloader.artFilePath = root.artFilePath
-        // Download
-        root.downloaded = false
+        
+        // Avvia il download
         coverArtDownloader.running = true
     }
 
-    Process { // Cover art downloader
+    Process { 
         id: coverArtDownloader
-        property string targetFile: root.artUrl
-        property string artFilePath: root.artFilePath
-        command: [ "bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'` ]
+        property string targetFile: root.artUrl // Binding locale
+        property string artFilePath: root.artFilePath // Binding locale
+        
+        // Usa -sSL per curl silenzioso e sicuro sui redirect
+        command: [ "bash", "-c", `[ -f '${artFilePath}' ] || curl -sSL '${targetFile}' -o '${artFilePath}'` ]
+        
         onExited: (exitCode, exitStatus) => {
-            root.downloaded = true
+            // Controllo di sicurezza: se il path è cambiato nel frattempo, non settare true
+            if (root.artFilePath === artFilePath && exitCode === 0) {
+                root.downloaded = true
+            }
         }
     }
 
     ColorQuantizer {
         id: colorQuantizer
         source: root.displayedArtFilePath
-        depth: 0 // 2^0 = 1 color
-        rescaleSize: 1 // Rescale to 1x1 pixel for faster processing
+        depth: 0 
+        rescaleSize: 1 // Ottimo per le performance
     }
 
     property QtObject blendedColors: AdaptedMaterialScheme {
-        color: artDominantColor
+        color: root.artDominantColor
     }
+
+    // --- INTERFACCIA GRAFICA ---
 
     StyledRectangularShadow {
         target: background
     }
+    
     Rectangle { // Background
         id: background
         anchors.fill: parent
@@ -117,11 +145,10 @@ Item { // Player instance
             id: blurredArt
             anchors.fill: parent
             source: root.displayedArtFilePath
-            sourceSize.width: background.width
-            sourceSize.height: background.height
+            sourceSize.width: 100 // Ottimizzazione: carichiamo piccola per la sfocatura
+            sourceSize.height: 100
             fillMode: Image.PreserveAspectCrop
-            cache: false
-            antialiasing: true
+            cache: false // Necessario per ricaricare se il file cambia
             asynchronous: true
 
             layer.enabled: true
@@ -139,7 +166,7 @@ Item { // Player instance
         WaveVisualizer {
             id: visualizerCanvas
             anchors.fill: parent
-            live: root.player?.isPlaying
+            live: root.player?.isPlaying ?? false
             points: root.visualizerPoints
             maxVisualizerValue: root.maxVisualizerValue
             smoothing: root.visualizerSmoothing
@@ -157,7 +184,8 @@ Item { // Player instance
                 implicitWidth: height
                 radius: Appearance.rounding.verysmall
                 color: ColorUtils.transparentize(blendedColors.colLayer1, 0.5)
-
+                
+                // Clip per arrotondare l'immagine interna
                 layer.enabled: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle {
@@ -167,20 +195,16 @@ Item { // Player instance
                     }
                 }
 
-                StyledImage { // Art image
+                StyledImage { 
                     id: mediaArt
-                    property int size: parent.height
                     anchors.fill: parent
-
                     source: root.displayedArtFilePath
                     fillMode: Image.PreserveAspectCrop
                     cache: false
-                    antialiasing: true
-
-                    width: size
-                    height: size
-                    sourceSize.width: size
-                    sourceSize.height: size
+                    
+                    // Ottimizzazione memoria: carica l'immagine alla dimensione esatta necessaria
+                    sourceSize.width: artBackground.height 
+                    sourceSize.height: artBackground.height
                 }
             }
 
@@ -197,7 +221,6 @@ Item { // Player instance
                     text: StringUtils.cleanMusicTitle(root.player?.trackTitle) || "Untitled"
                     animateChange: true
                     animationDistanceX: 6
-                    animationDistanceY: 0
                 }
                 StyledText {
                     id: trackArtist
@@ -208,9 +231,10 @@ Item { // Player instance
                     text: StringUtils.cleanMusicTitle(root.player?.trackArtist)
                     animateChange: true
                     animationDistanceX: 6
-                    animationDistanceY: 0
                 }
-                Item { Layout.fillHeight: true }
+                
+                Item { Layout.fillHeight: true } // Spacer
+
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: trackTime.implicitHeight + sliderRow.implicitHeight
@@ -222,9 +246,9 @@ Item { // Player instance
                         anchors.left: parent.left
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: blendedColors.colSubtext
-                        elide: Text.ElideRight
                         text: `${StringUtils.friendlyTimeForSeconds(root.player?.position)} / ${StringUtils.friendlyTimeForSeconds(root.player?.length)}`
                     }
+
                     RowLayout {
                         id: sliderRow
                         anchors {
@@ -232,10 +256,12 @@ Item { // Player instance
                             left: parent.left
                             right: parent.right
                         }
+                        
                         TrackChangeButton {
                             iconName: "skip_previous"
                             downAction: () => root.player?.previous()
                         }
+
                         Item {
                             id: progressBarContainer
                             Layout.fillWidth: true
@@ -250,31 +276,28 @@ Item { // Player instance
                                     highlightColor: blendedColors.colPrimary
                                     trackColor: blendedColors.colSecondaryContainer
                                     handleColor: blendedColors.colPrimary
-                                    value: root.player?.position / root.player?.length
+                                    value: (root.player?.length > 0) ? (root.player.position / root.player.length) : 0
                                     onMoved: {
-                                        root.player.position = value * root.player.length;
+                                        if (root.player) root.player.position = value * root.player.length;
                                     }
                                 }
                             }
 
                             Loader {
                                 id: progressBarLoader
-                                anchors {
-                                    verticalCenter: parent.verticalCenter
-                                    left: parent.left
-                                    right: parent.right
-                                }
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.left: parent.left
+                                anchors.right: parent.right
                                 active: !(root.player?.canSeek ?? false)
                                 sourceComponent: StyledProgressBar { 
-                                    wavy: root.player?.isPlaying
+                                    wavy: root.player?.isPlaying ?? false
                                     highlightColor: blendedColors.colPrimary
                                     trackColor: blendedColors.colSecondaryContainer
-                                    value: root.player?.position / root.player?.length
+                                    value: (root.player?.length > 0) ? (root.player.position / root.player.length) : 0
                                 }
                             }
-
-                            
                         }
+
                         TrackChangeButton {
                             iconName: "skip_next"
                             downAction: () => root.player?.next()
@@ -289,23 +312,22 @@ Item { // Player instance
                         property real size: 44
                         implicitWidth: size
                         implicitHeight: size
-                        downAction: () => root.player.togglePlaying();
+                        downAction: () => root.player?.togglePlaying();
 
-                        buttonRadius: root.player?.isPlaying ? Appearance?.rounding.normal : size / 2
-                        colBackground: root.player?.isPlaying ? blendedColors.colPrimary : blendedColors.colSecondaryContainer
-                        colBackgroundHover: root.player?.isPlaying ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover
-                        colRipple: root.player?.isPlaying ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
+                        buttonRadius: (root.player?.isPlaying ?? false) ? Appearance.rounding.normal : size / 2
+                        colBackground: (root.player?.isPlaying ?? false) ? blendedColors.colPrimary : blendedColors.colSecondaryContainer
+                        colBackgroundHover: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover
+                        colRipple: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
 
                         contentItem: MaterialSymbol {
                             iconSize: Appearance.font.pixelSize.huge
                             fill: 1
                             horizontalAlignment: Text.AlignHCenter
-                            color: root.player?.isPlaying ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer
-                            text: root.player?.isPlaying ? "pause" : "play_arrow"
+                            color: (root.player?.isPlaying ?? false) ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer
+                            text: (root.player?.isPlaying ?? false) ? "pause" : "play_arrow"
 
-                            Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                            }
+                            // FIX LEAK ANCHE QUI
+                            Behavior on color { ColorAnimation { duration: 200 } }
                         }
                     }
                 }
