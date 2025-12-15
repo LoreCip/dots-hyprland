@@ -192,7 +192,7 @@ Singleton {
         if (!title) return "";
 
         title = title.replace(/\.(mp3|flac|wav|m4a|ogg|opus)$/i, "");
-        title = title.replace(/\s*[-|]\s*(YouTube|Topic|Vevo|Official Video|Lyrics)\s*$/i, "");
+        title = title.replace(/\s*[-|]\s*(YouTube|YouTube Music|Topic|Vevo|Official Video|Lyrics)\s*$/i, "");
         title = title.replace(/\s*YouTube\s*$/i, "");
         title = title.replace(/\s*[\(\[\{【《「『][^\)\]\}】》」』]*[\)\]\}】》」』]/g, "");
         return title.replace(/\s+/g, " ").trim();

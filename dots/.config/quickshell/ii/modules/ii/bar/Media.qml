@@ -59,9 +59,8 @@ Item {
         } else {
             let fileName = Qt.md5(root.artUrl);
             let targetFile = root.storagePath + "/" + fileName;
-            
+
             downloadProc.targetFile = targetFile;
-            
             downloadProc.command = ["bash", "-c", `[ -f "${targetFile}" ] || curl -sSL "${root.artUrl}" -o "${targetFile}"`];
             downloadProc.running = true;
         }
