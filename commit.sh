@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 # Colori per l'output
 VERDE='\033[0;32m'
@@ -11,7 +11,7 @@ read -p "Commit message: " COMMIT
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 git add .
-git commit -m '$COMMIT'
+git commit -m "$COMMIT"
 git push origin $BRANCH
 
 echo -e "${VERDE}--- TUTTO AGGIORNATO! ---${RESET}"
