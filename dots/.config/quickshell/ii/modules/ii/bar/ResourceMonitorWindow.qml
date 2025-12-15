@@ -5,14 +5,13 @@ import QtQuick.Shapes
 
 import qs.modules.common
 import qs.modules.common.widgets
-import qs.modules.common.functions
 import qs.services
 
 Window {
     id: rootWindow
-    width: 400
-    height: 180
-    visible: false
+    width: 500
+    height: 280
+    visible: false 
     title: "Monitor Risorse"
     
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
@@ -35,15 +34,13 @@ Window {
         Rectangle {
             anchors.fill: parent; color: "#2d2d2d"; radius: 4; border.color: "#3d3d3d"; border.width: 1
 
-            // --- HEADER (Legenda Allineata a DESTRA) ---
+            // Header Legenda
             RowLayout {
                 anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
                 anchors.margins: 10; height: 20; z: 10; spacing: 15
                 
-                // 1. Spaziatore a sinistra: Spinge tutto il resto a destra
-                Item { Layout.fillWidth: true } 
+                Item { Layout.fillWidth: true } // Spaziatore a sinistra
 
-                // 2. Legenda (Ora a destra)
                 RowLayout {
                     spacing: 15
                     Repeater {
@@ -51,14 +48,11 @@ Window {
                         RowLayout {
                             spacing: 5
                             Rectangle { width: 8; height: 8; radius: 4; color: modelData.color }
-                            // Nome Serie
                             Text { text: modelData.label; color: "#cccccc"; font.pixelSize: 12 }
-                            // Valore
                             Text { 
                                 text: modelData.valueText
                                 color: "white"; font.bold: true; font.pixelSize: 12 
-                                // Monospace per evitare che i numeri "ballino" troppo
-                                font.family: "Monospace" 
+                                font.family: "Monospace"
                             }
                         }
                     }
@@ -73,26 +67,7 @@ Window {
                 anchors.topMargin: 35; anchors.bottomMargin: 25
                 anchors.leftMargin: 10; anchors.rightMargin: 10
                 
-                // Griglia
-                Repeater {
-                    model: 5 
-                    Item {
-                        width: parent.width; height: 1
-                        y: Math.floor(index * (plotArea.height / 4))
-                        Rectangle { width: parent.width; height: 1; color: "#3d3d3d"; opacity: 0.5 }
-                        Text {
-                            anchors.bottom: parent.top; anchors.left: parent.left; anchors.bottomMargin: 2
-                            color: "#888"; font.pixelSize: 10
-                            text: {
-                                let step = graphRoot.maximumValue / 4
-                                let val = graphRoot.maximumValue - (index * step)
-                                return graphRoot.maximumValue <= 1.0 ? (val * 100).toFixed(0) + "%" : val.toFixed(0)
-                            }
-                        }
-                    }
-                }
-
-                // Canvas
+                // 1. CANVAS (IL GRAFICO) - Ora è PRIMA, quindi sta SOTTO
                 Canvas {
                     id: graphCanvas
                     anchors.fill: parent
@@ -145,7 +120,35 @@ Window {
                     }
                 }
 
-                // Tooltip
+                // 2. GRIGLIA E TICKS - Ora è DOPO, quindi viene disegnata SOPRA il Canvas
+                Repeater {
+                    model: 5 
+                    Item {
+                        width: parent.width; height: 1
+                        y: Math.floor(index * (plotArea.height / 4))
+                        
+                        // Linea orizzontale
+                        Rectangle { width: parent.width; height: 1; color: "#3d3d3d"; opacity: 0.6 }
+                        
+                        // Etichetta valore
+                        Text {
+                            anchors.bottom: parent.top; anchors.left: parent.left; anchors.bottomMargin: 2
+                            color: "#999"
+                            font.pixelSize: 10
+                            
+                            // Aggiunge un bordo scuro al testo per leggerlo sopra il grafico colorato
+                            style: Text.Outline; styleColor: "#1e1e1e"
+                            
+                            text: {
+                                let step = graphRoot.maximumValue / 4
+                                let val = graphRoot.maximumValue - (index * step)
+                                return graphRoot.maximumValue <= 1.0 ? (val * 100).toFixed(0) + "%" : val.toFixed(0)
+                            }
+                        }
+                    }
+                }
+
+                // 3. INTERATTIVITÀ (Sempre sopra tutto)
                 MouseArea {
                     id: hoverArea; anchors.fill: parent; hoverEnabled: true 
                     property int hoveredIndex: -1
@@ -206,14 +209,14 @@ Window {
                 } 
             } 
             
-            // --- FOOTER (Asse X Aggiornato) ---
+            // Footer Asse X
             RowLayout {
                 anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right
                 anchors.leftMargin: 10; anchors.rightMargin: 10; anchors.bottomMargin: 5
                 
                 Text { text: "60s"; color: "#666"; font.pixelSize: 10 }
                 Item { Layout.fillWidth: true }
-                Text { text: "30s"; color: "#666"; font.pixelSize: 10 } // <-- Tick aggiunto
+                Text { text: "30s"; color: "#666"; font.pixelSize: 10 }
                 Item { Layout.fillWidth: true }
                 Text { text: "Now"; color: "#666"; font.pixelSize: 10 }
             }
@@ -221,6 +224,7 @@ Window {
     }
 
     // --- 2. DEFINIZIONE DEI COMPONENTI ---
+    
     Component {
         id: cpuGraph
         ResourceGraph {
@@ -283,7 +287,7 @@ Window {
         }
     }
 
-    // --- LAYOUT PRINCIPALE ---
+    // --- 3. LAYOUT PRINCIPALE ---
     Rectangle {
         id: mainBackground
         anchors.fill: parent
@@ -298,7 +302,7 @@ Window {
             anchors.margins: 15
             spacing: 10
 
-            // Titolo
+            // Titolo Centrato
             Text {
                 text: "Monitor Risorse"
                 color: "white"
@@ -307,7 +311,7 @@ Window {
                 Layout.alignment: Qt.AlignHCenter 
             }
 
-            // Tabs con il tuo MaterialSymbols.qml
+            // Tabs con MaterialSymbol
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 8
@@ -335,7 +339,8 @@ Window {
                         anchors.centerIn: parent
                         spacing: 8 
                         
-                        MaterialSymbol{
+                        // Componente Material Custom
+                        MaterialSymbol {
                             text: btn.icon
                             fill: btn.isActive ? 1 : 0
                             iconSize: 20 
@@ -363,6 +368,7 @@ Window {
                 TabButton { label: "Fan";  icon: "mode_fan"; tabIndex: 3 } 
             }
 
+            // Loader
             Loader {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
