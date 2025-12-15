@@ -113,13 +113,53 @@ Item { // Bar content region
                         Layout.rightMargin: Appearance.rounding.screenRounding
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                    }                    
+                    }
                 }
             }
 
+            // Resources {
+            //     alwaysShowAllResources: root.useShortenedForm === 2
+            //     Layout.fillWidth: root.useShortenedForm === 2
+            // }
+            // 1. IL LOADER: Caricamento pigro (Lazy Loading)
+            Loader {
+                id: monitorWindowLoader
+                active: false // All'avvio la finestra NON esiste in RAM
+                
+                sourceComponent: ResourceMonitorWindow {
+                    // Quando l'utente chiude la finestra con la "X"
+                    onClosing: (close) => {
+                        close.accepted = false // Non distruggere l'oggetto
+                        this.hide()            // Nascondilo soltanto
+                    }
+                }
+            }
+
+            // 2. IL WIDGET CLICCABILE
             Resources {
+                id: resourcesWidget
                 alwaysShowAllResources: root.useShortenedForm === 2
                 Layout.fillWidth: root.useShortenedForm === 2
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    
+                    onClicked: {
+                        // Primo click: crea la finestra in memoria
+                        if (!monitorWindowLoader.active) {
+                            monitorWindowLoader.active = true
+                        }
+
+                        // Click successivi: mostra e porta in primo piano
+                        // Nota: usiamo .item perché accediamo all'oggetto dentro il Loader
+                        if (monitorWindowLoader.item) {
+                            monitorWindowLoader.item.show()
+                            monitorWindowLoader.item.raise()
+                            monitorWindowLoader.item.requestActivate()
+                        }
+                    }
+                }
             }
         }
     }

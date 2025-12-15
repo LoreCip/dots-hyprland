@@ -38,6 +38,10 @@ Singleton {
     property list<real> cpuUsageHistory: []
     property list<real> memoryUsageHistory: []
     property list<real> swapUsageHistory: []
+    property list<real> tempHistory: []
+    property list<real> fan1History: []
+    property list<real> fan2History: []
+
 
     function kbToGbString(kb) {
         return (kb / (1024 * 1024)).toFixed(1) + " GB";
@@ -80,10 +84,31 @@ Singleton {
             cpuUsageHistory.shift()
         }
     }
+    function updateTempHistory() {
+        tempHistory = [...tempHistory, cpuTemperature]
+        if (tempHistory.length > historyLength) {
+            tempHistory.shift()
+        }
+    }
+    function updateFan1History() {
+        fan1History = [...fan1History, fan1RPM]
+        if (fan1History.length > historyLength) {
+            fan1History.shift()
+        }
+    }
+    function updateFan2History() {
+        fan2History = [...fan2History, fan2RPM]
+        if (fan2History.length > historyLength) {
+            fan2History.shift()
+        }
+    }
     function updateHistories() {
         updateMemoryUsageHistory()
         updateSwapUsageHistory()
         updateCpuUsageHistory()
+        updateTempHistory()
+        updateFan1History()
+        updateFan2History()
     }
 
 	Timer {
