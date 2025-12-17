@@ -1,6 +1,7 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
+import qs.modules.common
 import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Io
@@ -34,4 +35,126 @@ Singleton {
         ...pairedButNotConnectedDevices,
         ...unpairedDevices
     ]
+
+    property var deviceList: []
+    property bool popupVisible: false
+
+    function refresh() {
+        if (dumpProc.running) return;
+        dumpProc.running = true;
+    }
+
+    onActiveDeviceCountChanged: {
+        root.refresh()
+        statusTimer.restart() // Riavvia il conteggio dei 5s per non sovrapporsi
+    }
+    Timer {
+        interval: 5000
+        running: root.connected && root.popupVisible
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.refresh()
+    }
+
+    Process {
+        id: dumpProc
+        // Unica stringa per bash -c
+        command: ["bash", "-c", "upower --dump"]
+        
+        stdout: StdioCollector {
+            onStreamFinished: {
+                // Regex per separare i dispositivi
+                let rawDevices = text.split(/Device:\s+/); 
+                let parsedDevices = [];
+
+                for (let i = 0; i < rawDevices.length; i++) {
+                    let block = rawDevices[i];
+                    if (block.trim().length === 0) continue;
+
+                    let name = "Dispositivo";
+                    let percent = -1;
+                    let icon = "bluetooth"; // Default generico
+                    let isSystemBattery = false;
+                    let isDisplayDevice = false;
+                    
+                    // Flag per capire se abbiamo trovato il tipo specifico
+                    let typeFound = false; 
+
+                    let lines = block.split("\n");
+                    for (let line of lines) {
+                        line = line.trim();
+
+                        // 1. Nome Modello
+                        if (line.startsWith("model:")) {
+                            name = line.split(":")[1].trim();
+                        }
+
+                        // 2. Percentuale
+                        if (line.startsWith("percentage:")) {
+                            let match = line.match(/(\d+)%/);
+                            if (match) percent = parseInt(match[1]);
+                        }
+
+                        if (!typeFound) {
+                            if (line === "mouse") {
+                                icon = "mouse";
+                                typeFound = true;
+                            } else if (line === "keyboard") {
+                                icon = "keyboard";
+                                typeFound = true;
+                            } else if (line === "headset" || line === "headphones") {
+                                icon = "headphones";
+                                typeFound = true;
+                            } else if (line === "phone") {
+                                icon = "smartphone";
+                                typeFound = true;
+                            } else if (line === "gaming_input" || line === "joystick") {
+                                icon = "sports_esports"; // Gamepad
+                                typeFound = true;
+                            }
+                        }
+
+                        // 4. Check Batteria Interna
+                        if (line.startsWith("native-path:")) {
+                            if (/BAT\d+$/.test(line)) isSystemBattery = true;
+                        }
+                    }
+
+                    // Fallback: Se UPower non ha scritto il tipo esplicito,
+                    // guardiamo se il nome del modello contiene indizi.
+                    if (!typeFound) {
+                        let lowerName = name.toLowerCase();
+                        if (lowerName.includes("mouse")) icon = "mouse";
+                        else if (lowerName.includes("keyboard")) icon = "keyboard";
+                        else if (lowerName.includes("bud") || lowerName.includes("head") || lowerName.includes("free")) icon = "headphones";
+                    }
+
+                    // Check DisplayDevice
+                    if (block.includes("DisplayDevice")) isDisplayDevice = true;
+
+                    // --- VALIDAZIONE ---
+                    if (percent > -1 && !isSystemBattery && !isDisplayDevice) {
+                        
+                        // Logica Colori
+                        let col = Appearance.m3colors.m3success; 
+                        
+                        if (percent <= 20) {
+                            col = Appearance.colors.m3error;
+                        } else if (percent <= 40) {
+                            col = Appearance.m3colors.m3tertiary; 
+                        }
+                        
+                        parsedDevices.push({
+                            name: name,
+                            percent: percent,
+                            color: col,
+                            icon: icon
+                        });
+                    }
+                }
+                
+                root.deviceList = parsedDevices;
+            }
+        }
+    }
 }
