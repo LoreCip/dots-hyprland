@@ -336,6 +336,8 @@ Item { // Bar content region
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
                     }
+
+                    
                     
                     MaterialSymbol {
                         Layout.leftMargin: indicatorsRowLayout.realSpacing
@@ -343,6 +345,27 @@ Item { // Bar content region
                         text: BluetoothStatus.connected ? "bluetooth_connected" : BluetoothStatus.enabled ? "bluetooth" : "bluetooth_disabled"
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
+
+                        MouseArea {
+                            id: btMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: BluetoothStatus.activeDeviceCount > 0
+                            acceptedButtons: Qt.NoButton 
+                            
+                            onEntered: BluetoothStatus.refresh()
+                        }
+
+                        BluetoothWidgetPopup {
+                            id: btWidgetPopup
+                            hoverTarget: btMouseArea
+                        }
+
+                        Binding {
+                            target: BluetoothStatus
+                            property: "popupVisible"
+                            value: btWidgetPopup.active // "active" è true quando il mouse è sopra (hover) o keepOpen è true
+                            restoreMode: Binding.RestoreBinding
+                        }
                     }
 
                     BatteryIndicator {

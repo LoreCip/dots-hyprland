@@ -43,7 +43,7 @@ Window {
                 Layout.alignment: Qt.AlignHCenter 
             }
 
-            // 2. Tab Bar (Usa il nuovo componente MonitorTabButton)
+            // 2. Tab Bar
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 8
@@ -66,7 +66,7 @@ Window {
                 }
             }
 
-            // 3. Contenuto (Loader + Componenti Dati)
+            // 3. Contenuto
             Loader {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -84,19 +84,24 @@ Window {
     }
 
     // --- DEFINIZIONE DATI (Models) ---
-    // Usiamo ResourceGraph widget, ma gli iniettiamo i dati specifici
-    
+
+    // 1. CPU GRAPH COMPONENT
     Component {
         id: cpuGraphComp
         ResourceGraph {
             readonly property real currentUsage: ResourceUsage.cpuUsage
             property real stableScale: 0.20
             
-            // Logica di auto-scale CPU
+            // Logica: Cerca il valore MAX in tutta la history visibile
             onCurrentUsageChanged: {
-                let step = Math.ceil((currentUsage * 1.1) / 0.2) * 0.2
-                stableScale = Math.max(0.2, Math.min(1.0, Math.max(stableScale, step)))
-                if (step < stableScale && currentUsage < (stableScale - 0.15)) stableScale = step
+                // Recupera il massimo storico attuale o il valore corrente
+                let maxHistory = Math.max(...ResourceUsage.cpuUsageHistory, currentUsage)
+                
+                // Calcola lo step basandosi sul picco storico
+                let step = Math.ceil((maxHistory * 1.1) / 0.2) * 0.2
+                
+                // Imposta la scala (minimo 0.2, massimo 1.0)
+                stableScale = Math.max(0.2, Math.min(1.0, step))
             }
             
             maximumValue: stableScale
@@ -109,17 +114,19 @@ Window {
         }
     }
 
+    // 2. RAM GRAPH COMPONENT
     Component {
         id: ramGraphComp
         ResourceGraph {
             readonly property real currentUsage: ResourceUsage.memoryUsedPercentage
             property real stableScale: 0.20
             
-            // Logica auto-scale RAM
+            // Logica: Cerca il valore MAX in tutta la history visibile
             onCurrentUsageChanged: {
-                let step = Math.ceil((currentUsage * 1.1) / 0.2) * 0.2
-                stableScale = Math.max(0.2, Math.min(1.0, Math.max(stableScale, step)))
-                if (step < stableScale && currentUsage < (stableScale - 0.15)) stableScale = step
+                let maxHistory = Math.max(...ResourceUsage.memoryUsageHistory, currentUsage)
+                
+                let step = Math.ceil((maxHistory * 1.1) / 0.2) * 0.2
+                stableScale = Math.max(0.2, Math.min(1.0, step))
             }
             
             maximumValue: stableScale
@@ -132,16 +139,23 @@ Window {
         }
     }
 
+    // 3. TEMP GRAPH COMPONENT
     Component {
         id: tempGraphComp
         ResourceGraph {
             readonly property real currentTemp: ResourceUsage.cpuTemperature
             property real stableScale: 90
             
-            // Logica auto-scale Temp
+            // Logica: Scala basata sul picco storico
             onCurrentTempChanged: {
-                if (currentTemp > stableScale) stableScale = Math.ceil(currentTemp / 10) * 10
-                else if (stableScale > 90 && currentTemp < stableScale - 15) stableScale = Math.max(90, Math.ceil((currentTemp + 5) / 10) * 10)
+                let maxHistory = Math.max(...ResourceUsage.tempHistory, currentTemp)
+                
+                // Se il massimo storico supera la scala base (90), alza la scala
+                if (maxHistory > 90) {
+                     stableScale = Math.ceil((maxHistory + 5) / 10) * 10
+                } else {
+                     stableScale = 90
+                }
             }
             
             maximumValue: stableScale
@@ -154,17 +168,27 @@ Window {
         }
     }
 
+    // 4. FAN GRAPH COMPONENT
     Component {
         id: fanGraphComp
         ResourceGraph {
+            // Monitoriamo i picchi correnti
             readonly property int currentPeak: Math.max(ResourceUsage.fan1RPM, ResourceUsage.fan2RPM)
             property int stableScale: 4000
             
-            // Logica auto-scale Fan
+            // Logica: Controlla entrambe le history per trovare il picco assoluto
             onCurrentPeakChanged: {
-                let step = Math.max(4000, Math.ceil((currentPeak * 1.2) / 1000) * 1000)
-                if (step > stableScale) stableScale = step
-                else if (step < stableScale * 0.75) stableScale = step
+                // Trova il max nelle due history
+                let maxFan1 = Math.max(...ResourceUsage.fan1History, 0)
+                let maxFan2 = Math.max(...ResourceUsage.fan2History, 0)
+                
+                // Il massimo assoluto tra history e valore corrente
+                let globalMax = Math.max(maxFan1, maxFan2, currentPeak)
+
+                // Calcola scala con buffer del 20%, step di 1000 RPM
+                let step = Math.max(4000, Math.ceil((globalMax * 1.2) / 1000) * 1000)
+                
+                stableScale = step
             }
             
             maximumValue: stableScale
