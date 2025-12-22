@@ -34,11 +34,10 @@ Item {
     property bool propertiesDialogVisible: false
     property var propertiesDialogApp: null
 
-    // Dimensioni dinamiche
     implicitHeight: expanded ? (availableHeight > 0 ? availableHeight * 0.85 : 600) : collapsedHeight
     
     property int appColumns: {
-        const targetWidth = availableWidth > 0 ? availableWidth : width;
+        var targetWidth = availableWidth > 0 ? availableWidth : width;
         return Math.max(6, Math.floor((targetWidth - 60) / 90));
     }
 
@@ -48,16 +47,19 @@ Item {
         category: "ApplicationDrawer"
         property var savedHiddenApps: []
         property var savedRecentUsage: ({})
+        property string savedSortMode: "name"
     }
 
     Component.onCompleted: {
         root.hiddenApps = appSettings.savedHiddenApps || [];
         root.recentUsage = appSettings.savedRecentUsage || {};
+        root.sortMode = appSettings.savedSortMode || "name";
         appGrid.currentIndex = -1;
     }
 
     onHiddenAppsChanged: appSettings.savedHiddenApps = root.hiddenApps
     onRecentUsageChanged: appSettings.savedRecentUsage = root.recentUsage
+    onSortModeChanged: appSettings.savedSortMode = root.sortMode
 
     Connections {
         target: GlobalStates
@@ -73,15 +75,15 @@ Item {
 
     // --- LOGICA ---
     function getFilteredApps() {
-        const list = AppSearch.list;
+        var list = AppSearch.list;
         if (!list) return [];
         
-        const searchKey = root.searchText.toLowerCase();
+        var searchKey = root.searchText.toLowerCase();
         
-        let filtered = Array.from(list).filter(function(app) {
-            const id = app.desktopFile || app.name;
-            const isHidden = root.hiddenApps.indexOf(id) !== -1;
-            const matchesSearch = searchKey === "" || 
+        var filtered = Array.from(list).filter(function(app) {
+            var id = app.desktopFile || app.name;
+            var isHidden = root.hiddenApps.indexOf(id) !== -1;
+            var matchesSearch = searchKey === "" || 
                 app.name.toLowerCase().indexOf(searchKey) !== -1 ||
                 (app.description && app.description.toLowerCase().indexOf(searchKey) !== -1);
             
@@ -90,10 +92,10 @@ Item {
 
         filtered.sort(function(a, b) {
             if (root.sortMode === "recent") {
-                const idA = a.desktopFile || a.name;
-                const idB = b.desktopFile || b.name;
-                const timeA = root.recentUsage[idA] || 0;
-                const timeB = root.recentUsage[idB] || 0;
+                var idA = a.desktopFile || a.name;
+                var idB = b.desktopFile || b.name;
+                var timeA = root.recentUsage[idA] || 0;
+                var timeB = root.recentUsage[idB] || 0;
                 if (timeB !== timeA) return timeB - timeA;
             }
             return a.name.localeCompare(b.name);
@@ -103,17 +105,17 @@ Item {
     }
 
     function trackLaunch(app) {
-        const id = app.desktopFile || app.name;
-        // Uso Object.assign per compatibilità (evita l'errore '...')
-        let usage = Object.assign({}, root.recentUsage);
+        var id = app.desktopFile || app.name;
+        // Sostituito spread operator con Object.assign per evitare crash
+        var usage = Object.assign({}, root.recentUsage);
         usage[id] = Date.now();
         root.recentUsage = usage;
     }
 
     function copyAppPath(app) {
         if (!app) return;
-        const exec = app.exec || "";
-        const execName = exec.split(" ")[0] || "";
+        var exec = app.exec || "";
+        var execName = exec.split(" ")[0] || "";
         pathFinderProcess.execName = execName;
         pathFinderProcess.running = true;
     }
@@ -127,16 +129,26 @@ Item {
         }
     }
 
-    // --- COMPONENTI INTERNI RINOMINATI ---
+    // --- COMPONENTI INTERNI ---
     component DrawerHeaderButton: RippleButton {
         id: hBtn
         property string iconName: ""
         property string tip: ""
+        property bool isActive: false 
+        
         Layout.preferredWidth: 32; Layout.preferredHeight: 32; buttonRadius: Appearance.rounding.full
-        colBackground: "transparent"; colBackgroundHover: Appearance.colors.colLayer2
+        
+        colBackground: "transparent"
+        colBackgroundHover: Appearance.colors.colLayer2
+        
+        focusPolicy: Qt.NoFocus
+        onClicked: focus = false
+
         contentItem: MaterialSymbol {
-            anchors.centerIn: parent; text: hBtn.iconName
-            iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colSubtext
+            anchors.centerIn: parent
+            text: hBtn.iconName
+            iconSize: Appearance.font.pixelSize.normal
+            color: Appearance.colors.colSubtext
         }
         StyledToolTip { text: hBtn.tip }
     }
@@ -146,6 +158,8 @@ Item {
         property string iconName: ""; property string labelText: ""
         Layout.fillWidth: true; implicitHeight: 36; buttonRadius: Appearance.rounding.small
         colBackground: "transparent"; colBackgroundHover: Appearance.colors.colLayer2
+        focusPolicy: Qt.NoFocus
+        onClicked: focus = false
         contentItem: RowLayout {
             spacing: 12; Item { Layout.preferredWidth: 4 }
             MaterialSymbol { text: mAction.iconName; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer0 }
@@ -153,7 +167,7 @@ Item {
         }
     }
 
-    // --- LAYOUT ---
+    // --- LAYOUT PRINCIPALE ---
     StyledRectangularShadow { target: drawerBg }
 
     Rectangle {
@@ -168,15 +182,22 @@ Item {
                 Layout.fillWidth: true; spacing: 8
                 MaterialSymbol { text: "apps"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer0 }
                 StyledText {
-                    text: root.expanded ? Translation.tr("All Applications") : Translation.tr("Applications")
+                    text: root.expanded ? "Tutte le applicazioni" : "Applicazioni"
                     font.pixelSize: Appearance.font.pixelSize.larger; font.weight: Font.Medium; color: Appearance.colors.colOnLayer0
                 }
                 Item { Layout.fillWidth: true }
                 
                 DrawerHeaderButton {
+                    iconName: root.sortMode === "name" ? "sort_by_alpha" : "schedule"
+                    tip: root.sortMode === "name" ? "Ordina: A-Z" : "Ordina: Recenti"
+                    isActive: root.sortMode === "recent"
+                    onClicked: root.sortMode = (root.sortMode === "name" ? "recent" : "name")
+                }
+
+                DrawerHeaderButton {
                     iconName: root.showHiddenOnly ? "visibility" : "visibility_off"
                     tip: root.showHiddenOnly ? "Mostra normali" : "Gestisci nascoste"
-                    colBackground: root.showHiddenOnly ? Appearance.colors.colSecondaryContainer : "transparent"
+                    isActive: root.showHiddenOnly
                     onClicked: root.showHiddenOnly = !root.showHiddenOnly
                 }
 
@@ -190,7 +211,7 @@ Item {
             TextField {
                 id: searchField
                 Layout.fillWidth: true; visible: root.expanded; Layout.maximumHeight: root.expanded ? implicitHeight : 0; opacity: root.expanded ? 1 : 0
-                placeholderText: Translation.tr("Search..."); color: Appearance.m3colors.m3onSurface
+                placeholderText: "Ricerca..."; color: Appearance.m3colors.m3onSurface
                 background: Rectangle { radius: Appearance.rounding.small; color: Appearance.colors.colLayer1; border.color: searchField.activeFocus ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant }
                 onTextChanged: root.searchText = text
                 MaterialSymbol {
@@ -209,25 +230,34 @@ Item {
                     model: ScriptModel { values: { root.searchText; root.hiddenApps; root.showHiddenOnly; root.sortMode; return root.getFilteredApps(); } }
 
                     delegate: RippleButton {
+                        id: appButton
                         width: appGrid.cellWidth; height: appGrid.cellHeight; buttonRadius: Appearance.rounding.normal
-                        colBackground: (hovered || focus) ? Appearance.colors.colSecondaryContainer : "transparent"
+                        
+                        colBackground: (appButton.hovered || appButton.visualFocus) ? Appearance.colors.colSecondaryContainer : "transparent"
+                        colBackgroundHover: Appearance.colors.colSecondaryContainer
+                        
                         onClicked: { root.trackLaunch(modelData); GlobalStates.overviewOpen = false; modelData.execute(); focus = false }
+                        
                         altAction: function(event) {
-                            const pos = mapToItem(root, event.x, event.y);
+                            var pos = mapToItem(root, event.x, event.y);
                             root.contextMenuPosition = Qt.point(pos.x, pos.y);
                             root.contextMenuApp = modelData;
                             root.contextMenuVisible = true;
                         }
+
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 8; spacing: 6
                             IconImage { 
                                 Layout.alignment: Qt.AlignHCenter; implicitSize: root.iconSize
                                 source: {
-                                    const icon = modelData.icon;
+                                    var icon = modelData.icon;
                                     return (icon.indexOf("/") === 0 || icon.indexOf("file://") === 0) ? "file://" + icon.replace("file://", "") : Quickshell.iconPath(icon, "image-missing");
                                 }
                             }
-                            StyledText { Layout.fillWidth: true; text: modelData.name; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap; font.pixelSize: Appearance.font.pixelSize.smaller }
+                            StyledText { 
+                                Layout.fillWidth: true; text: modelData.name; horizontalAlignment: Text.AlignHCenter
+                                elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap; font.pixelSize: Appearance.font.pixelSize.smaller
+                            }
                         }
                     }
                 }
@@ -258,9 +288,9 @@ Item {
                         iconName: isH ? "visibility" : "visibility_off"
                         labelText: isH ? "Ripristina app" : "Nascondi app"
                         onClicked: {
-                            const id = root.contextMenuApp.desktopFile || root.contextMenuApp.name;
-                            let list = root.hiddenApps.slice();
-                            const idx = list.indexOf(id);
+                            var id = root.contextMenuApp.desktopFile || root.contextMenuApp.name;
+                            var list = root.hiddenApps.slice();
+                            var idx = list.indexOf(id);
                             if (idx > -1) list.splice(idx, 1); else list.push(id);
                             root.hiddenApps = list;
                             root.contextMenuVisible = false;
