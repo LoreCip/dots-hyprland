@@ -14,7 +14,7 @@ StyledPopup {
     
         // 1. Qui definiamo la grandezza del popup
         implicitWidth: 320 
-        implicitHeight: columnDevices.height + 30 // 15px padding sopra e sotto
+        implicitHeight: columnDevices.height + 20 // 15px padding sopra e sotto
 
         MouseArea {
             anchors.fill: parent
