@@ -9,7 +9,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
-import Qt.labs.settings 1.0
+import QtCore
 
 Item {
     id: root
@@ -44,13 +44,19 @@ Item {
     // --- PERSISTENZA ---
     Settings {
         id: appSettings
+        location: "" 
         category: "ApplicationDrawer"
+        
         property var savedHiddenApps: []
         property var savedRecentUsage: ({})
         property string savedSortMode: "name"
     }
 
     Component.onCompleted: {
+        Qt.application.organization = "quickshell"
+        Qt.application.domain = "quickshell"
+        Qt.application.name = "quickshell"
+
         root.hiddenApps = appSettings.savedHiddenApps || [];
         root.recentUsage = appSettings.savedRecentUsage || {};
         root.sortMode = appSettings.savedSortMode || "name";
@@ -106,7 +112,6 @@ Item {
 
     function trackLaunch(app) {
         var id = app.desktopFile || app.name;
-        // Sostituito spread operator con Object.assign per evitare crash
         var usage = Object.assign({}, root.recentUsage);
         usage[id] = Date.now();
         root.recentUsage = usage;
