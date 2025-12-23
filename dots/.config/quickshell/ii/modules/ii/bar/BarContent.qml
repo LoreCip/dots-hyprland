@@ -330,15 +330,40 @@ Item { // Bar content region
                         Layout.rightMargin: indicatorsRowLayout.realSpacing
                         color: rightSidebarButton.colText
                     }
-                    
+
                     MaterialSymbol {
-                        text: Network.materialSymbol
+                        // Layout.leftMargin: indicatorsRowLayout.realSpacing
+                        text: {
+                            if (NetworkSpeed.activeInterface === "none") return "signal_wifi_off"
+                            if (NetworkSpeed.activeInterface.startsWith("w")) return "wifi"
+                            return "lan"
+                        }
+                        
                         iconSize: Appearance.font.pixelSize.larger
                         color: rightSidebarButton.colText
+
+                        MouseArea {
+                            id: netMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton 
+                            
+                            onEntered: NetworkSpeed.refresh()
+                        }
+
+                        NetworkSpeedWidgetPopup {
+                            id: netWidgetPopup
+                            hoverTarget: netMouseArea
+                        }
+
+                        Binding {
+                            target: NetworkSpeed
+                            property: "popupVisible"
+                            value: netWidgetPopup.active
+                            restoreMode: Binding.RestoreBinding
+                        }
                     }
 
-                    
-                    
                     MaterialSymbol {
                         Layout.leftMargin: indicatorsRowLayout.realSpacing
                         visible: BluetoothStatus.available
