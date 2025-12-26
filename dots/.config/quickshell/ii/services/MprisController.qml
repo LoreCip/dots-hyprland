@@ -182,6 +182,14 @@ Singleton {
             }
         }
 
+        function stop(): void {
+            if (root.activePlayer && root.activePlayer.canStop) {
+                root.activePlayer.stop();
+            } else {
+                this.pauseAll();
+            }
+        }
+
         function playPause(): void { root.togglePlaying(); }
         function previous(): void { root.previous(); }
         function next(): void { root.next(); }
