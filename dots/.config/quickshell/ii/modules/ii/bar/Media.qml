@@ -54,16 +54,27 @@ Item {
 
     // --- FUNZIONE ESECUTIVA (Lanciata dal Timer) ---
     function executeCoverUpdate() {
-        if (root.artUrl.startsWith("file://")) {
-            root.imageToShow = root.artUrl;
-        } else {
-            let fileName = Qt.md5(root.artUrl);
-            let targetFile = root.storagePath + "/" + fileName;
+        if (!root.artUrl) return;
 
-            downloadProc.targetFile = targetFile;
-            downloadProc.command = ["bash", "-c", `[ -f "${targetFile}" ] || curl -sSL "${root.artUrl}" -o "${targetFile}"`];
-            downloadProc.running = true;
+        if (root.artUrl.startsWith("file://") || root.artUrl.startsWith("/")) {
+            root.imageToShow = root.artUrl.startsWith("/") ? "file://" + root.artUrl : root.artUrl;
+            return;
         }
+
+        let fileName = Qt.md5(root.artUrl);
+        let targetFile = root.storagePath + "/" + fileName;
+
+        downloadProc.targetFile = targetFile;
+        downloadProc.command = [
+            "curl", "-sSL", 
+            "--connect-timeout", "3", 
+            "--max-time", "10",
+            "--create-dirs",
+            "-o", targetFile, 
+            root.artUrl
+        ];
+        
+        downloadProc.running = true; 
     }
 
     Process {
@@ -86,7 +97,7 @@ Item {
         id: cavaProc
         running: root.isPlaying 
         command: ["bash", "-c", 
-            "printf '[general]\nbars=3\nframerate=60\n[input]\nmethod=pulse\n[output]\nchannels=mono\nmethod=raw\nraw_target=/dev/stdout\ndata_format=ascii\nascii_max_range=20\n' > /tmp/qs_bar_cava.conf && stdbuf -oL cava -p /tmp/qs_bar_cava.conf"
+            "printf '[general]\nbars=3\nframerate=25\n[input]\nmethod=pulse\n[output]\nchannels=mono\nmethod=raw\nraw_target=/dev/stdout\ndata_format=ascii\nascii_max_range=20\n' > /tmp/qs_bar_cava.conf && stdbuf -oL cava -p /tmp/qs_bar_cava.conf"
         ]
         stdout: SplitParser {
             onRead: (data) => {
@@ -139,48 +150,39 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: parent.height - 8
             Layout.preferredWidth: parent.height - 8
-            
+
+            Rectangle {
+                id: coverMask
+                anchors.fill: parent
+                radius: 6
+                color: Appearance.colors.colSecondaryContainer
+                antialiasing: true
+
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "music_note"
+                    iconSize: 14
+                    color: Appearance.colors.colOnSecondaryContainer
+                    visible: !finalCover.visible
+                }
+            }
+
             Image {
                 id: coverSource
                 anchors.fill: parent
                 source: root.imageToShow
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
-                cache: false 
-                visible: false 
-                mipmap: true
-                smooth: true
-            }
-
-            Rectangle {
-                id: coverMask
-                anchors.fill: parent
-                radius: 6
                 visible: false
-                antialiasing: true
             }
 
             OpacityMask {
+                id: finalCover
                 anchors.fill: parent
                 source: coverSource
                 maskSource: coverMask
-                visible: root.imageToShow !== "" && coverSource.status === Image.Ready && root.isPlaying
                 antialiasing: true
-            }
-
-            // Fallback
-            Rectangle { 
-                anchors.fill: parent
-                radius: 6
-                color: Appearance.colors.colSecondaryContainer
-                visible: !parent.children[2].visible || !root.isPlaying 
-                
-                MaterialSymbol {
-                    anchors.centerIn: parent
-                    text: "music_note"
-                    iconSize: 14
-                    color: Appearance.colors.colOnSecondaryContainer
-                }
+                visible: root.imageToShow !== "" && coverSource.status === Image.Ready && root.isPlaying
             }
         }
 
