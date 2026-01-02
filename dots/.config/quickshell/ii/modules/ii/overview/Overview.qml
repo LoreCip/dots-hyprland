@@ -106,6 +106,22 @@ Scope {
                     visible: (panelWindow.searchingText == "")
                 }
             }
+
+            Item {
+                width: 1
+                height: 50
+                visible: appDrawer.visible
+            }
+
+            ApplicationDrawer {
+                id: appDrawer
+                anchors.horizontalCenter: parent.horizontalCenter
+            
+                width: overviewLoader.item ? overviewLoader.item.width * 0.9: (panelWindow.screen.width * 0.7)
+                availableWidth: width
+                availableHeight: Math.max(300, panelWindow.height - y - 50)
+                visible: panelWindow.searchingText === ""
+            }
         }
     }
 

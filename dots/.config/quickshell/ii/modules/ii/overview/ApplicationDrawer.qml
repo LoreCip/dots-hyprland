@@ -187,7 +187,7 @@ Item {
                 Layout.fillWidth: true; spacing: 8
                 MaterialSymbol { text: "apps"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer0 }
                 StyledText {
-                    text: root.expanded ? "Tutte le applicazioni" : "Applicazioni"
+                    text: "Applicazioni"
                     font.pixelSize: Appearance.font.pixelSize.larger; font.weight: Font.Medium; color: Appearance.colors.colOnLayer0
                 }
                 Item { Layout.fillWidth: true }
