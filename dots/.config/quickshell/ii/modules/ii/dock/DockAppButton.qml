@@ -1,3 +1,4 @@
+
 import qs.services
 import qs.modules.common
 import qs.modules.common.functions
@@ -33,13 +34,17 @@ DockButton {
     }
 
     enabled: !isSeparator
-    implicitWidth: isSeparator ? 1 : implicitHeight - topInset - bottomInset
+    
+    property real hoverScale: 1.0
+    property real maxScale: 2.2  
+    property int buttonIndex: 0  
+    
+    implicitWidth: isSeparator ? 1 : (implicitHeight - topInset - bottomInset) * hoverScale
 
-    Connections {
-        target: DesktopEntries
-
-        function onApplicationsChanged() {
-            root.desktopEntry = DesktopEntries.heuristicLookup(appToplevel.appId);
+    Behavior on implicitWidth {
+        NumberAnimation { 
+            duration: 200
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -95,6 +100,15 @@ DockButton {
         active: !isSeparator
         sourceComponent: Item {
             anchors.centerIn: parent
+            scale: root.hoverScale
+            transformOrigin: Item.Bottom
+
+            Behavior on scale {
+                NumberAnimation { 
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             Loader {
                 id: iconImageLoader
@@ -116,7 +130,7 @@ DockButton {
                 sourceComponent: Item {
                     Desaturate {
                         id: desaturatedIcon
-                        visible: false // There's already color overlay
+                        visible: false
                         anchors.fill: parent
                         source: iconImageLoader
                         desaturation: 0.8
@@ -142,7 +156,7 @@ DockButton {
                         required property int index
                         radius: Appearance.rounding.full
                         implicitWidth: (appToplevel.toplevels.length <= 3) ? 
-                            root.countDotWidth : root.countDotHeight // Circles when too many
+                            root.countDotWidth : root.countDotHeight
                         implicitHeight: root.countDotHeight
                         color: appIsActive ? Appearance.colors.colPrimary : ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.4)
                     }
