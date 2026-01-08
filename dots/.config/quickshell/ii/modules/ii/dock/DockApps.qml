@@ -20,51 +20,10 @@ Item {
     property Item lastHoveredButton
     property bool buttonHovered: false
     property bool requestDockShow: previewPopup.show
-    
-    property int hoveredIndex: -1
-    property real maxScale: 1.5
-    property real influenceRadius: 2  
 
     Layout.fillHeight: true
-    Layout.topMargin: Appearance.sizes.hyprlandGapsOut
+    Layout.topMargin: Appearance.sizes.hyprlandGapsOut // why does this work
     implicitWidth: listView.implicitWidth
-    
-    function calculateScale(index) {
-        if (hoveredIndex < 0) return 1.0;
-        
-        const distance = Math.abs(index - hoveredIndex);
-        if (distance === 0) return maxScale;
-        if (distance > influenceRadius) return 1.0;
-        
-        const ratio = 1 - (distance / (influenceRadius + 1));
-        return 1.0 + (maxScale - 1.0) * Math.pow(ratio, 2);
-    }
-    
-    MouseArea {
-        anchors.fill: listView
-        hoverEnabled: true
-        propagateComposedEvents: true
-        z: -1  
-        
-        onPositionChanged: {
-            const item = listView.itemAt(mouseX + listView.contentX, mouseY);
-            if (item && item.buttonIndex !== undefined) {
-                root.hoveredIndex = item.buttonIndex;
-            } else {
-                root.hoveredIndex = -1;
-            }
-        }
-        
-        onExited: {
-            root.hoveredIndex = -1;
-        }
-        
-        onPressed: mouse.accepted = false
-        onReleased: mouse.accepted = false
-        onClicked: mouse.accepted = false
-        onDoubleClicked: mouse.accepted = false
-        onEntered: mouse.accepted = false
-    }
     
     StyledListView {
         id: listView
@@ -86,47 +45,11 @@ Item {
         }
         delegate: DockAppButton {
             required property var modelData
-            required property int index
             appToplevel: modelData
             appListRoot: root
-            buttonIndex: index
 
             topInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
             bottomInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
-            
-            hoverScale: root.calculateScale(index)
-            
-            Loader {
-                anchors.fill: parent
-                active: true
-                z: 100  
-                sourceComponent: MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    propagateComposedEvents: true
-                    
-                    onEntered: {
-                        root.lastHoveredButton = parent.parent;
-                        root.buttonHovered = true;
-                        root.hoveredIndex = parent.parent.buttonIndex;
-                    }
-                    
-                    onExited: {
-                        if (root.lastHoveredButton === parent.parent) {
-                            root.buttonHovered = false;
-                        }
-                    }
-                    
-                    onPositionChanged: {
-                        root.hoveredIndex = parent.parent.buttonIndex;
-                    }
-                    
-                    onPressed: mouse.accepted = false
-                    onReleased: mouse.accepted = false
-                    onClicked: mouse.accepted = false
-                    onDoubleClicked: mouse.accepted = false
-                }
-            }
         }
     }
 
@@ -137,7 +60,7 @@ Item {
         Connections {
             target: root
             function onLastHoveredButtonChanged() {
-                previewPopup.allPreviewsReady = false;
+                previewPopup.allPreviewsReady = false; // Reset readiness when the hovered button changes
             } 
         }
         function updatePreviewReadiness() {
@@ -158,6 +81,7 @@ Item {
 
         onShouldShowChanged: {
             if (shouldShow) {
+                // show = true;
                 updateTimer.restart();
             } else {
                 updateTimer.restart();
