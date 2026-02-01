@@ -70,39 +70,57 @@ Item { // Player instance
     }
 
     // Gestione download copertine
+    Timer {
+        id: artDebouncer
+        interval: 400 // 400ms di attesa
+        repeat: false
+        onTriggered: {
+            if (root.artUrl && root.artUrl.length > 0) {
+                // Avvia il download solo ora
+                coverArtDownloader.targetFile = root.artUrl
+                coverArtDownloader.artFilePath = root.artFilePath
+                coverArtDownloader.running = true
+            }
+        }
+    }
+
     onArtFilePathChanged: {
-        if (!root.artUrl || root.artUrl.length === 0) {
-            root.artDominantColor = Appearance.m3colors.m3secondaryContainer
-            root.downloaded = false
-            return;
-        }
-
-        // Se l'immagine è già cambiata mentre scaricavamo quella prima, fermiamo tutto
-        if (coverArtDownloader.running) {
-            coverArtDownloader.kill(); 
-        }
-
+        // 1. Resetta subito lo stato visuale (così l'utente vede che sta caricando)
         root.downloaded = false
         
-        // Aggiorniamo i parametri del processo
-        coverArtDownloader.targetFile = root.artUrl 
-        coverArtDownloader.artFilePath = root.artFilePath
-        
-        // Avvia il download
-        coverArtDownloader.running = true
+        // 2. Se l'URL è vuoto, puliamo e basta
+        if (!root.artUrl || root.artUrl.length === 0) {
+            artDebouncer.stop()
+            coverArtDownloader.kill() // Qui è sicuro killare, non serve più nulla
+            root.artDominantColor = Appearance.m3colors.m3secondaryContainer
+            return
+        }
+
+        // 3. Se c'è un download precedente in corso che NON è quello attuale, lo fermiamo
+        if (coverArtDownloader.running && coverArtDownloader.targetFile !== root.artUrl) {
+            coverArtDownloader.kill()
+        }
+
+        // 4. Avvia il timer (se arrivano altri cambi rapidi, il timer riparte da zero)
+        artDebouncer.restart()
     }
 
     Process { 
         id: coverArtDownloader
-        property string targetFile: root.artUrl // Binding locale
-        property string artFilePath: root.artFilePath // Binding locale
+        property string targetFile: ""
+        property string artFilePath: ""
         
-        // Usa -sSL per curl silenzioso e sicuro sui redirect
-        command: [ "bash", "-c", `[ -f '${artFilePath}' ] || curl -sSL '${targetFile}' -o '${artFilePath}'` ]
+        // FIX: Aggiunto timeout a curl per evitare blocchi infiniti
+        // Se il file esiste già, esce subito con successo (exit 0)
+        command: [ "bash", "-c", `
+            if [ -f '${artFilePath}' ]; then exit 0; fi
+            curl -sSL --connect-timeout 5 --max-time 15 '${targetFile}' -o '${artFilePath}'
+        ` ]
         
         onExited: (exitCode, exitStatus) => {
-            // Controllo di sicurezza: se il path è cambiato nel frattempo, non settare true
-            if (root.artFilePath === artFilePath && exitCode === 0) {
+            // Controllo: se il file scaricato corrisponde all'URL che vogliamo ORA
+            if (exitCode === 0 && root.artUrl === targetFile) {
+                // Forziamo un refresh dell'immagine
                 root.downloaded = true
             }
         }
