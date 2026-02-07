@@ -6,48 +6,45 @@ ROSSO='\033[0;31m'
 GIALLO='\033[1;33m'
 RESET='\033[0m'
 
-# 1. Verifica che la directory sia pulita
-if [[ -n $(git status -s) ]]; then
-    echo -e "${ROSSO}ERRORE: Hai modifiche non salvate (uncommitted).${RESET}"
-    echo "Salvale o mettile in stash (git stash) prima di continuare."
+# Funzione per gestire i conflitti
+handle_conflict() {
+    echo -e "${ROSSO}✖ CONFLITTO RILEVATO!${RESET}"
+    echo -e "${GIALLO}Passaggi necessari:${RESET}"
+    echo "1. Risolvi i conflitti in VS Code."
+    echo "2. Esegui 'git add .' per i file risolti."
+    echo "3. Rilancia questo script (./update_repo.sh) per continuare."
     exit 1
-fi
+}
 
-# 2. Controllo upstream
-if ! git remote | grep -q "upstream"; then
-    echo -e "${ROSSO}ERRORE: Remote 'upstream' non trovato.${RESET}"
-    exit 1
-fi
-
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-BACKUP_BRANCH="backup-aggiornamento-$(date +%Y%m%d-%H%M%S)"
-
-echo -e "${GIALLO}--- Preparazione aggiornamento ---${RESET}"
-
-# 3. Creazione backup di sicurezza
-echo -e "${VERDE}Creazione branch di backup: $BACKUP_BRANCH${RESET}"
-git branch $BACKUP_BRANCH
-
-# 4. Fetch e Rebase
-echo -e "${VERDE}Scarico aggiornamenti e inizio Rebase...${RESET}"
-git fetch upstream
-
-if git rebase upstream/$BRANCH; then
-    echo -e "${VERDE}✔ Rebase completato senza conflitti!${RESET}"
+# 1. Controllo se c'è un rebase già in corso
+if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+    echo -e "${GIALLO}--- Rebase in corso rilevato! Provo a continuare... ---${RESET}"
+    if git rebase --continue; then
+        echo -e "${VERDE}✔ Rebase continuato e finito con successo!${RESET}"
+    else
+        handle_conflict
+    fi
 else
-    echo -e "${ROSSO}✖ CONFLITTI RILEVATI!${RESET}"
-    echo -e "${GIALLO}-------------------------------------------------------"
-    echo -e "1. Apri VS Code: i file in conflitto sono evidenziati in rosso."
-    echo -e "2. Usa l'interfaccia 'Source Control' per accettare le modifiche."
-    echo -e "3. Una volta risolti tutti i file, esegui nel terminale:"
-    echo -e "   git add . && git rebase --continue"
-    echo -e "4. Se vuoi annullare tutto: git rebase --abort"
-    echo -e "-------------------------------------------------------${RESET}"
-    exit 1
+    # 2. Inizio normale: Controllo modifiche non salvate
+    if [[ -n $(git status -s) ]]; then
+        echo -e "${ROSSO}ERRORE: Hai modifiche non salvate.${RESET}"
+        echo "Esegui 'git stash' o un commit prima di continuare."
+        exit 1
+    fi
+
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    echo -e "${VERDE}--- Inizio nuovo aggiornamento su branch: $BRANCH ---${RESET}"
+    
+    git fetch upstream
+    if git rebase upstream/$BRANCH; then
+        echo -e "${VERDE}✔ Rebase completato senza intoppi!${RESET}"
+    else
+        handle_conflict
+    fi
 fi
 
-# 5. Push finale (solo se il rebase è andato liscio al primo colpo)
-echo -e "${VERDE}Invio al tuo repository GitHub...${RESET}"
-git push origin $BRANCH --force
+# 3. Se arriviamo qui, il rebase è finito. Facciamo il push.
+echo -e "${VERDE}3. Invio le modifiche al tuo GitHub (Force Push)...${RESET}"
+git push origin $(git rev-parse --abbrev-ref HEAD) --force
 
-echo -e "${VERDE}--- AGGIORNAMENTO COMPLETATO! ---${RESET}"
+echo -e "${VERDE}--- TUTTO AGGIORNATO! ---${RESET}"
