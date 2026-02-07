@@ -1,45 +1,53 @@
 #!/bin/bash
 
-# Colori per l'output
+# Colori
 VERDE='\033[0;32m'
 ROSSO='\033[0;31m'
 GIALLO='\033[1;33m'
 RESET='\033[0m'
 
-# 1. Controllo preliminare
-if ! git remote | grep -q "upstream"; then
-    echo -e "${ROSSO}ERRORE: Non hai configurato 'upstream'.${RESET}"
-    echo "Esegui prima: git remote add upstream https://github.com/end-4/dots-hyprland.git"
+# 1. Verifica che la directory sia pulita
+if [[ -n $(git status -s) ]]; then
+    echo -e "${ROSSO}ERRORE: Hai modifiche non salvate (uncommitted).${RESET}"
+    echo "Salvale o mettile in stash (git stash) prima di continuare."
     exit 1
 fi
 
-# Ottieni il nome del branch corrente (solitamente main o master)
+# 2. Controllo upstream
+if ! git remote | grep -q "upstream"; then
+    echo -e "${ROSSO}ERRORE: Remote 'upstream' non trovato.${RESET}"
+    exit 1
+fi
+
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+BACKUP_BRANCH="backup-aggiornamento-$(date +%Y%m%d-%H%M%S)"
 
-echo -e "${GIALLO}--- Inizio aggiornamento del branch: $BRANCH ---${RESET}"
+echo -e "${GIALLO}--- Preparazione aggiornamento ---${RESET}"
 
-# 2. Scarica le novità dall'autore originale (senza toccare nulla)
-echo -e "${VERDE}1. Scarico gli aggiornamenti da upstream...${RESET}"
+# 3. Creazione backup di sicurezza
+echo -e "${VERDE}Creazione branch di backup: $BACKUP_BRANCH${RESET}"
+git branch $BACKUP_BRANCH
+
+# 4. Fetch e Rebase
+echo -e "${VERDE}Scarico aggiornamenti e inizio Rebase...${RESET}"
 git fetch upstream
 
-# 3. Esegui il Rebase
-echo -e "${VERDE}2. Applico le tue modifiche sopra quelle nuove (Rebase)...${RESET}"
 if git rebase upstream/$BRANCH; then
-    echo -e "${VERDE}✔ Rebase completato con successo!${RESET}"
+    echo -e "${VERDE}✔ Rebase completato senza conflitti!${RESET}"
 else
-    echo -e "${ROSSO}✖ CONFLITTO RILEVATO!${RESET}"
-    echo -e "${GIALLO}Lo script si è fermato perché c'è un conflitto nei file.${RESET}"
-    echo "Cosa devi fare ora:"
-    echo "1. Apri i file indicati sopra e risolvi i conflitti manualmente."
-    echo "2. Esegui: git add ."
-    echo "3. Esegui: git rebase --continue"
-    echo "4. Infine lancia: git push origin $BRANCH --force"
+    echo -e "${ROSSO}✖ CONFLITTI RILEVATI!${RESET}"
+    echo -e "${GIALLO}-------------------------------------------------------"
+    echo -e "1. Apri VS Code: i file in conflitto sono evidenziati in rosso."
+    echo -e "2. Usa l'interfaccia 'Source Control' per accettare le modifiche."
+    echo -e "3. Una volta risolti tutti i file, esegui nel terminale:"
+    echo -e "   git add . && git rebase --continue"
+    echo -e "4. Se vuoi annullare tutto: git rebase --abort"
+    echo -e "-------------------------------------------------------${RESET}"
     exit 1
 fi
 
-# 4. Push forzato sul tuo GitHub
-echo -e "${VERDE}3. Invio le modifiche al tuo GitHub (Force Push)...${RESET}"
+# 5. Push finale (solo se il rebase è andato liscio al primo colpo)
+echo -e "${VERDE}Invio al tuo repository GitHub...${RESET}"
 git push origin $BRANCH --force
 
-echo -e "${VERDE}--- TUTTO AGGIORNATO! ---${RESET}"
-echo "Ora puoi lanciare ./setup install per applicare le modifiche al PC."
+echo -e "${VERDE}--- AGGIORNAMENTO COMPLETATO! ---${RESET}"
