@@ -85,7 +85,26 @@ case ${SUBCMD_NAME} in
       source ${SUBCMD_DIR}/2.setups.sh
     fi
     if [[ "${SKIP_ALLFILES}" != true ]]; then
+      
+      ### MODIFICA INIZIO: Backup del file quickshell.conf ###
+      QS_TARGET="$HOME/.config/quickshell/quickshell.conf"
+      QS_BACKUP="/tmp/quickshell.conf.bak"
+      if [ -f "$QS_TARGET" ]; then
+          cp "$QS_TARGET" "$QS_BACKUP"
+          echo "Backup temporaneo di quickshell.conf creato."
+      fi
+      ### FINE MODIFICA ###
+
       source ${SUBCMD_DIR}/3.files.sh
+
+      ### MODIFICA INIZIO: Ripristino del file quickshell.conf ###
+      if [ -f "$QS_BACKUP" ]; then
+          cp "$QS_BACKUP" "$QS_TARGET"
+          rm "$QS_BACKUP"
+          echo "File quickshell.conf originale ripristinato."
+      fi
+      ### FINE MODIFICA ###
+
     fi
     ;;
   install-deps)
@@ -120,7 +139,26 @@ case ${SUBCMD_NAME} in
     done
     pause
     if [[ "${SKIP_ALLFILES}" != true ]]; then
+      
+      ### MODIFICA INIZIO: Backup del file quickshell.conf (anche per install-files) ###
+      QS_TARGET="$HOME/.config/quickshell/quickshell.conf"
+      QS_BACKUP="/tmp/quickshell.conf.bak"
+      if [ -f "$QS_TARGET" ]; then
+          cp "$QS_TARGET" "$QS_BACKUP"
+          echo "Backup temporaneo di quickshell.conf creato."
+      fi
+      ### FINE MODIFICA ###
+
       source ${SUBCMD_DIR}/3.files.sh
+      
+      ### MODIFICA INIZIO: Ripristino del file quickshell.conf ###
+      if [ -f "$QS_BACKUP" ]; then
+          cp "$QS_BACKUP" "$QS_TARGET"
+          rm "$QS_BACKUP"
+          echo "File quickshell.conf originale ripristinato."
+      fi
+      ### FINE MODIFICA ###
+
     fi
     ;;
   *)
