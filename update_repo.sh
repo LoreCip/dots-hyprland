@@ -44,7 +44,7 @@ else
 fi
 
 # 3. Se arriviamo qui, il rebase è finito. Facciamo il push.
-echo -e "${VERDE}3. Invio le modifiche al tuo GitHub (Force Push)...${RESET}"
+echo -e "${VERDE} Invio le modifiche su GitHub (Force Push)...${RESET}"
 git push origin $(git rev-parse --abbrev-ref HEAD) --force
 
 echo -e "${VERDE}--- TUTTO AGGIORNATO! ---${RESET}"
