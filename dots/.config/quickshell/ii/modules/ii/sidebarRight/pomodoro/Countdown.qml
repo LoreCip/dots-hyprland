@@ -55,13 +55,13 @@ Item {
         }
     }
 
-    function resetCountdown() {
+    function clearCountdown() {
         root.isRunning = false;
         root.targetSeconds = root.baseTargetSeconds;
         root.secondsLeft = root.baseTargetSeconds;
     }
 
-    function clearCountdown() {
+    function resetCountdown() {
         root.isRunning = false;
         root.baseTargetSeconds = root.defaultSeconds 
         root.targetSeconds = root.defaultSeconds;
@@ -250,7 +250,7 @@ Item {
             RippleButton {
                 implicitHeight: 35
                 implicitWidth: 90
-                onClicked: root.isRunning ? root.resetCountdown() : root.clearCountdown()
+                onClicked: root.isRunning ? root.clearCountdown() : root.resetCountdown()
                 enabled: true
 
                 font.pixelSize: Appearance.font.pixelSize.larger
