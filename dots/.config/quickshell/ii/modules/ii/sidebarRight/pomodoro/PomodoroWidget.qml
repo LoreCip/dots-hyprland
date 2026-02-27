@@ -8,8 +8,9 @@ import QtQuick.Layouts
 Item {
     id: root
     property var tabButtonList: [
-        {"name": Translation.tr("Pomodoro"), "icon": "search_activity"},
-        {"name": Translation.tr("Stopwatch"), "icon": "timer"}
+        // {"name": Translation.tr("Pomodoro"), "icon": "search_activity"},
+        {"name": Translation.tr("Stopwatch"), "icon": "timer"},
+        {"name": Translation.tr("Countdown"), "icon": "alarm"}
     ]
 
     // These are keybinds for stopwatch and pomodoro
@@ -19,7 +20,7 @@ Item {
                 tabBar.incrementCurrentIndex();
             } else if (event.key === Qt.Key_PageUp) {
                 tabBar.decrementCurrentIndex();
-            }
+            } 
             event.accepted = true
         } else if (event.key === Qt.Key_Space || event.key === Qt.Key_S) { // Pause/resume with Space or S
             if (tabBar.currentIndex === 0) {
@@ -68,8 +69,9 @@ Item {
             currentIndex: tabBar.currentIndex
 
             // Tabs
-            PomodoroTimer {}
+            // PomodoroTimer {}
             Stopwatch {}
+            Countdown {}
         }
     }
 }
