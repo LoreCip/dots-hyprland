@@ -23,7 +23,7 @@ Item {
         radius: Appearance.rounding.full
         color: Appearance.colors.colSecondaryContainer
         implicitHeight: root.expanded ? itemHeight : baseHighlightHeight
-        implicitWidth: tabBarColumn?.children[root.currentIndex]?.visualWidth ?? 100
+        implicitWidth: tabBarColumn?.children[root.currentIndex]?.visualWidth ?? tabBarColumn?.children[root.currentIndex - 1]?.visualWidth  // 100
 
         Behavior on anchors.topMargin {
             NumberAnimation {
