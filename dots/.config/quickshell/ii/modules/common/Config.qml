@@ -557,6 +557,7 @@ Singleton {
                 property bool battery: false
                 property bool pomodoro: false
                 property string theme: "freedesktop"
+                property bool timer: true
             }
 
             property JsonObject time: JsonObject {

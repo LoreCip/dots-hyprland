@@ -55,13 +55,13 @@ Item {
         }
     }
 
-    function clearCountdown() {
+    function resetCountdown() {
         root.isRunning = false;
         root.targetSeconds = root.baseTargetSeconds;
         root.secondsLeft = root.baseTargetSeconds;
     }
 
-    function resetCountdown() {
+    function clearCountdown() {
         root.isRunning = false;
         root.baseTargetSeconds = root.defaultSeconds 
         root.targetSeconds = root.defaultSeconds;
@@ -207,17 +207,21 @@ Item {
             opacity: visible ? 1 : 0
 
             component AdjustButton : RippleButton {
+                id: control
                 property int timeOffset: 0
                 property string labelText: ""
                 
                 implicitHeight: 30
-                implicitWidth: 40
+                implicitWidth: 60
                 colBackground: Appearance.colors.colLayer2
                 onClicked: root.adjustTime(timeOffset)
+
                 contentItem: StyledText {
-                    anchors.centerIn: parent
-                    text: parent.labelText
+                    text: control.labelText
                     color: Appearance.colors.colOnLayer2
+
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
             }
 
@@ -250,7 +254,7 @@ Item {
             RippleButton {
                 implicitHeight: 35
                 implicitWidth: 90
-                onClicked: root.isRunning ? root.clearCountdown() : root.resetCountdown()
+                onClicked: root.isRunning ? root.resetCountdown() : root.clearCountdown()
                 enabled: true
 
                 font.pixelSize: Appearance.font.pixelSize.larger
@@ -264,6 +268,41 @@ Item {
                     text:  root.isRunning ? Translation.tr("Clear") : Translation.tr("Reset")
                     color: Appearance.colors.colOnErrorContainer
                 }
+            }
+
+            RippleButton {
+                implicitHeight: 35
+                implicitWidth: 25
+                
+                onClicked: Config.setNestedValue("sounds.timer", !Config.options.sounds.timer)
+                
+                enabled: true
+
+                font.pixelSize: Appearance.font.pixelSize.larger
+                
+                colBackground: Config.options.sounds.timer ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer3
+                colBackgroundHover: Config.options.sounds.timer ? Appearance.colors.colPrimaryContainerHover : Appearance.colors.colLayer3Hover
+                colRipple: Appearance.colors.colPrimaryContainerActive
+
+                contentItem : MaterialSymbol {
+                    id: trillIcon
+                    anchors.centerIn: parent
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    fill: 1
+                    text: Config.options.sounds.timer ? "notifications" : "notifications_off"
+                    iconSize: Appearance.font.pixelSize.small
+                    visible: isCharging && percentage < 1 
+		            opacity: (isCharging && percentage < 1) ? 1 : 0
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 300; easing.type: Easing.InOutCubic }
+                    }
+
+                    onOpacityChanged: {
+                        visible = opacity > 0
+                    }
+    	        }
             }
         }
     }
